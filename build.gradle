@@ -2,7 +2,6 @@ import name.martingeisse.chipflow.build.SynthesizeTask
 
 apply plugin: 'base'
 
-
 task synthesize(type: SynthesizeTask) {
     toplevelModule = "SevenSegmentDecoder"
 }

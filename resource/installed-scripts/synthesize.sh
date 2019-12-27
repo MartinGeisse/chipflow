@@ -1,61 +1,13 @@
 #!/usr/bin/tcsh -f
-#
-# synthesize.sh:
-#-------------------------------------------------------------------------
-#
-# This script synthesizes verilog files for qflow using yosys
-#
-#-------------------------------------------------------------------------
-# November 2006
-# Steve Beccue and Tim Edwards
-# MultiGiG, Inc.
-# Scotts Valley, CA
-# Updated 2013 Tim Edwards
-# Open Circuit Design
-#-------------------------------------------------------------------------
 
-if ($#argv == 2) then
-   set projectpath=$argv[1]
-   set sourcename=$argv[2]
-else
-   echo Usage:  synthesize.sh <project_path> <source_name>
-   echo
-   echo   where
-   echo
-   echo	      <project_path> is the name of the project directory containing
-   echo			a file called qflow_vars.sh.
-   echo
-   echo	      <source_name> is the root name of the verilog file, and
-   echo
-   echo	      Options are set from project_vars.sh.  Use the following
-   echo	      variable names:
-   echo
-   echo			$yosys_options	for yosys
-   echo			$yosys_script	for yosys
-   echo			$nobuffers	to bypass ybuffer
-   echo			$fanout_options	for blifFanout
-   exit 1
-endif
-
+set projectpath=$argv[1]
+set sourcename=$argv[2]
 set rootname=${sourcename:h}
-
-#---------------------------------------------------------------------
-# This script is called with the first argument <project_path>, which should
-# have file "qflow_vars.sh".  Get all of our standard variable definitions
-# from the qflow_vars.sh file.
-#---------------------------------------------------------------------
-
-if (! -f ${projectpath}/qflow_vars.sh ) then
-   echo "Error:  Cannot find file qflow_vars.sh in path ${projectpath}"
-   exit 1
-endif
 
 source ${projectpath}/qflow_vars.sh
 source ${techdir}/${techname}.sh
 cd ${projectpath}
-if (-f project_vars.sh) then
-   source project_vars.sh
-endif
+source project_vars.sh
 
 # Reset the logfile
 rm -f ${synthlog} >& /dev/null
@@ -94,68 +46,6 @@ endif
 #---------------------------------------------------------------------
 
 cd ${sourcedir}
-
-set uniquedeplist = ""
-set yerrcnt = 2
-
-while ($yerrcnt > 1)
-
-# Note:  While the use of read_liberty to allow structural verilog only
-# works in yosys 0.3.1 and newer, the following line works for the
-# purpose of querying the hierarchy in all versions.
-
-set vext = "v"
-set svopt = ""
-
-if ( !( -f ${rootname}.${vext} )) then
-   set vext = "sv"
-   set svopt = "-sv"
-   if ( !( -f ${rootname}.${vext} )) then
-      echo "Error:  Verilog source file ${rootname}.v (or .sv) cannot be found!" \
-		|& tee -a ${synthlog}
-   endif
-endif
-
-cat > ${rootname}.ys << EOF
-# Synthesis script for yosys created by qflow
-read_liberty -lib -ignore_miss_dir -setattr blackbox ${libertypath}
-read_verilog ${svopt} ${rootname}.${vext}
-EOF
-
-foreach subname ( $uniquedeplist )
-    if ( !( -f ${subname}.${vext} )) then
-	echo "Error:  Verilog source file ${subname}.${vext} cannot be found!" \
-			|& tee -a ${synthlog}
-    endif
-    echo "read_verilog ${svopt} ${subname}.${vext}" >> ${rootname}.ys
-end
-
-cat >> ${rootname}.ys << EOF
-# Hierarchy check
-hierarchy -check
-EOF
-
-set yerrors = `eval ${bindir}/yosys -s ${rootname}.ys |& sed -e "/\\/s#\\#/#g" \
-		| grep ERROR`
-set yerrcnt = `echo $yerrors | wc -c`
-
-if ($yerrcnt > 1) then
-   set yvalid = `echo $yerrors | grep "referenced in module" | wc -c`
-   if ($yvalid > 1) then
-      set newdep = `echo $yerrors | cut -d " " -f 3 | cut -c3- | cut -d "'" -f 1`
-      set uniquedeplist = "${uniquedeplist} ${newdep}"
-   else
-      ${bindir}/yosys -s ${rootname}.ys >& ${synthlog}
-      echo "Errors detected in verilog source, need to be corrected." \
-		|& tee -a ${synthlog}
-      echo "See file ${synthlog} for error output."
-      echo "Synthesis flow stopped due to error condition." >> ${synthlog}
-      exit 1
-   endif
-endif
-
-# end while ($yerrcnt > 1)
-end
 
 #---------------------------------------------------------------------
 # Generate the main yosys script
@@ -209,12 +99,9 @@ endif
 
 cat > ${rootname}.ys << EOF
 read_liberty -lib -ignore_miss_dir -setattr blackbox ${libertypath}
-read_verilog ${svopt} ${rootname}.${vext}
+read_verilog ${rootname}.v
+# TODO read other verilog sources
 EOF
-
-foreach subname ( $uniquedeplist )
-    echo "read_verilog ${svopt} ${subname}.${vext}" >> ${rootname}.ys
-end
 
 # Will not support yosys 0.0.x syntax; flag a warning instead
 
