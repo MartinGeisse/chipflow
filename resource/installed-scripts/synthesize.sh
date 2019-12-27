@@ -67,27 +67,10 @@ cat > ${rootname}.ys << EOF
 read_liberty -lib -ignore_miss_dir -setattr blackbox ${libertypath}
 read_verilog ${rootname}.v
 # TODO read other verilog sources
-EOF
-
-# Will not support yosys 0.0.x syntax; flag a warning instead
-
-
-if ( ${?yosys_script} ) then
-   if ( -f ${yosys_script} ) then
-      cat ${yosys_script} >> ${rootname}.ys
-   else
-      echo "Error: yosys script ${yosys_script} specified but not found"
-   endif
-else
-
-   cat >> ${rootname}.ys << EOF
 
 # High-level synthesis
 synth -top ${rootname}
-EOF
 
-
-cat >> ${rootname}.ys << EOF
 # Map register flops
 dfflibmap -liberty ${libertypath}
 opt
@@ -152,14 +135,6 @@ EOF
 # Yosys synthesis
 #---------------------------------------------------------------------
 
-if ( ! ${?yosys_options} ) then
-   set yosys_options = ""
-endif
-
-# Check if "yosys_options" specifies a script to use for yosys.
-# If not, call yosys with the default script.
-set usescript = `echo ${yosys_options} | grep -- -s | wc -l`
-
 # If there is a file ${rootname}_mapped.blif, move it to a temporary
 # place so we can see if yosys generates a new one or not.
 
@@ -167,12 +142,7 @@ if ( -f ${rootname}_mapped.blif ) then
    mv ${rootname}_mapped.blif ${rootname}_mapped_orig.blif
 endif
 
-echo "Running yosys for verilog parsing and synthesis" |& tee -a ${synthlog}
-if ( ${usescript} == 1 ) then
-   eval ${bindir}/yosys ${yosys_options} |& tee -a ${synthlog}
-else
-   eval ${bindir}/yosys ${yosys_options} -s ${rootname}.ys |& tee -a ${synthlog}
-endif
+eval ${bindir}/yosys -s ${rootname}.ys |& tee -a ${synthlog}
 
 #---------------------------------------------------------------------
 # Spot check:  Did yosys produce file ${rootname}_mapped.blif?

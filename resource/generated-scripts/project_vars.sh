@@ -1,12 +1,8 @@
 #!/usr/bin/tcsh -f
-#------------------------------------------------------------
-# project variables for project /home/martin/git-repos/chipflow
-#------------------------------------------------------------
 
 # Synthesis command options:
 # -------------------------------------------
-# set yosys_options = 
-# set yosys_script = 
+# set yosys_script =
 # set yosys_debug = 
 # set abc_script = 
 # set nobuffers = 
@@ -27,6 +23,3 @@
 
 # Minimum operating period of the clock (in ps)
 # set vesta_options = "--period 1E5"
-
-#------------------------------------------------------------
-
