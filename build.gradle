@@ -1,0 +1,5 @@
+import name.martingeisse.chipflow.build.SynthesizeTask
+
+task synthesize(type: SynthesizeTask) {
+    toplevelModule = "SevenSegmentDecoder"
+}
