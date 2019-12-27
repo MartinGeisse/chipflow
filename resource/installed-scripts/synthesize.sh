@@ -131,20 +131,6 @@ clean -purge
 EOF
 endif
 
-# Map tiehi and tielo, if they are defined
-
-if ( ${?tiehi} && ${?tiehipin_out} ) then
-   if ( "${tiehi}" != "" ) then
-      echo "hilomap -hicell $tiehi $tiehipin_out" >> ${rootname}.ys  
-   endif
-endif
-
-if ( ${?tielo} && ${?tielopin_out} ) then
-   if ( "${tielo}" != "" ) then
-      echo "hilomap -locell $tielo $tielopin_out" >> ${rootname}.ys  
-   endif
-endif
-
 # Output buffering, if not specifically prevented
 if (!($?nobuffers)) then
        cat >> ${rootname}.ys << EOF
@@ -229,21 +215,11 @@ set final_blif = "${rootname}_mapped_tmp.blif"
 
 echo "Cleaning Up blif file syntax" |& tee -a ${synthlog}
 
-if ( "$tielo" == "") then
-   set subs0a="/LOGIC0/s/O=/${bufpin_in}=gnd ${bufpin_out}=/"
-   set subs0b="/LOGIC0/s/LOGIC0/${bufcell}/"
-else
-   set subs0a=""
-   set subs0b=""
-endif
+set subs0a="/LOGIC0/s/O=/${bufpin_in}=gnd ${bufpin_out}=/"
+set subs0b="/LOGIC0/s/LOGIC0/${bufcell}/"
 
-if ( "$tiehi" == "") then
-   set subs1a="/LOGIC1/s/O=/${bufpin_in}=vdd ${bufpin_out}=/"
-   set subs1b="/LOGIC1/s/LOGIC1/${bufcell}/"
-else
-   set subs1a=""
-   set subs1b=""
-endif
+set subs1a="/LOGIC1/s/O=/${bufpin_in}=vdd ${bufpin_out}=/"
+set subs1b="/LOGIC1/s/LOGIC1/${bufcell}/"
 
 #---------------------------------------------------------------------
 # Remove backslashes, references to "$techmap", and
