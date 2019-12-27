@@ -51,51 +51,17 @@ cd ${sourcedir}
 # Generate the main yosys script
 #---------------------------------------------------------------------
 
-set blif_opts = ""
-
 # Set option for generating buffers
-set blif_opts = "${blif_opts} -buf ${bufcell} ${bufpin_in} ${bufpin_out}"
 
-# Set option for generating only the flattened top-level cell
-# set blif_opts = "${blif_opts} ${rootname}"
-
-# Determine version of yosys
-set versionstring = `${bindir}/yosys -V | cut -d' ' -f2`
-set major = `echo $versionstring | cut -d. -f1`
-set minor = `echo $versionstring | cut -d. -f2`
-
-# Sigh. . .  versioning doesn't follow any fixed standard
-set minortest = `echo $minor | cut -d+ -f2`
-set minor = `echo $minor | cut -d+ -f1`
-if ( ${minortest} == "" ) then
-
-   set revisionstring = `echo $versionstring | cut -d. -f3`
-   if ( ${revisionstring} == "" ) set revisionstring = 0
-   set revision = `echo $revisionstring | cut -d+ -f1`
-   set subrevision = `echo $revisionstring | cut -d+ -f2`
-   if ( ${subrevision} == "" ) set subrevision = 0
-
-else
-   set revision = 0
-   set subrevision = ${minortest}
-
-endif
-set minor = `echo ${minor} | sed 's/+//'`
-      
 cat > ${rootname}.ys << EOF
 # Synthesis script for yosys created by qflow
 EOF
 
 # From yosys version 3.0.0+514, structural verilog using cells from the
 # the same standard cell set that is mapped by abc is supported.
-if (( ${major} == 0 && ${minor} == 3 && ${revision} == 0 && ${subrevision} >= 514) || \
-    ( ${major} == 0 && ${minor} == 3 && ${revision} > 0 ) || \
-    ( ${major} == 0 && ${minor} > 3 ) || \
-    ( ${major} > 0) ) then
 cat > ${rootname}.ys << EOF
 read_liberty -lib -ignore_miss_dir -setattr blackbox ${libertypath}
 EOF
-endif
 
 cat > ${rootname}.ys << EOF
 read_liberty -lib -ignore_miss_dir -setattr blackbox ${libertypath}
@@ -105,19 +71,6 @@ EOF
 
 # Will not support yosys 0.0.x syntax; flag a warning instead
 
-if ( ${major} == 0 && ${minor} == 0 ) then
-   echo "Warning: yosys 0.0.x unsupported.  Please update!"
-   echo "Output is likely to be incompatible with qflow."
-endif
-
-if ( ${major} == 0 && ${minor} < 5 ) then
-
-cat >> ${rootname}.ys << EOF
-# High-level synthesis
-hierarchy -top ${rootname}
-EOF
-
-endif
 
 if ( ${?yosys_script} ) then
    if ( -f ${yosys_script} ) then
@@ -125,7 +78,7 @@ if ( ${?yosys_script} ) then
    else
       echo "Error: yosys script ${yosys_script} specified but not found"
    endif
-else if ( ${major} != 0 || ${minor} >= 5 ) then
+else
 
    cat >> ${rootname}.ys << EOF
 
@@ -133,18 +86,6 @@ else if ( ${major} != 0 || ${minor} >= 5 ) then
 synth -top ${rootname}
 EOF
 
-else
-
-   cat >> ${rootname}.ys << EOF
-
-# High-level synthesis
-proc; memory; opt; fsm; opt
-
-# Map to internal cell library
-techmap; opt
-EOF
-
-endif
 
 cat >> ${rootname}.ys << EOF
 # Map register flops
@@ -205,13 +146,11 @@ if ( ${?tielo} && ${?tielopin_out} ) then
 endif
 
 # Output buffering, if not specifically prevented
-if ( ${major} > 0 || ${minor} > 1 ) then
-   if (!($?nobuffers)) then
+if (!($?nobuffers)) then
        cat >> ${rootname}.ys << EOF
 # Output buffering
 iopadmap -outpad ${bufcell} ${bufpin_in}:${bufpin_out} -bits
 EOF
-   endif
 endif
 
 cat >> ${rootname}.ys << EOF
@@ -219,8 +158,9 @@ cat >> ${rootname}.ys << EOF
 opt
 clean
 rename -enumerate
-write_blif ${blif_opts} ${rootname}_mapped.blif
+write_blif ${blif_opts} -buf ${bufcell} ${bufpin_in} ${bufpin_out} ${rootname}_mapped.blif
 EOF
+
 
 #---------------------------------------------------------------------
 # Yosys synthesis
@@ -277,19 +217,8 @@ ${scriptdir}/ypostproc.tcl ${rootname}_mapped.blif ${rootname} \
 # Add buffers in front of all outputs (for yosys versions before 0.2.0)
 #----------------------------------------------------------------------
 
-if ( ${major} == 0 && ${minor} < 2 ) then
-   if ($?nobuffers) then
-      set final_blif = "${rootname}_mapped_tmp.blif"
-   else
-      echo "Adding output buffers"
-      ${scriptdir}/ybuffer.tcl ${rootname}_mapped_tmp.blif \
-		${rootname}_mapped_buf.blif ${techdir}/${techname}.sh
-      set final_blif = "${rootname}_mapped_buf.blif"
-   endif
-else
-   # Buffers already handled within yosys
-   set final_blif = "${rootname}_mapped_tmp.blif"
-endif
+# Buffers already handled within yosys
+set final_blif = "${rootname}_mapped_tmp.blif"
 
 #---------------------------------------------------------------------
 # The following definitions will replace "LOGIC0" and "LOGIC1"
