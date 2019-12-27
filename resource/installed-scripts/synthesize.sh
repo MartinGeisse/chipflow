@@ -17,34 +17,9 @@ set libertypath=techdir/osu05_stdcells.lib
 set spicepath=techdir/osu050_stdcells.sp
 set lefpath=techdir/osu050_stdcells.lef
 
-#---------------------------------------------------------------------
-# Determine hierarchy by running yosys with a simple script to check
-# hierarchy.  Add files until yosys no longer reports an error.
-# Any error not related to a missing source file causes the script
-# to rerun yosys and dump error information into the log file, and
-# exit.
-#---------------------------------------------------------------------
-
 cd ${sourcedir}
 
-#---------------------------------------------------------------------
-# Generate the main yosys script
-#---------------------------------------------------------------------
-
-cat > ${rootname}.ys << EOF
-
-read_liberty -lib -ignore_miss_dir -setattr blackbox ${libertypath}
-read_verilog ${rootname}.v
-# TODO read other verilog sources
-
-# High-level synthesis
-synth -top ${rootname}
-
-# Map register flops
-dfflibmap -liberty ${libertypath}
-opt
-
-EOF
+# done: generate yosys script head
 
 if ( ${?abc_script} ) then
    if ( ${abc_script} != "" ) then

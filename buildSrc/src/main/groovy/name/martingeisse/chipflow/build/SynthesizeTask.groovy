@@ -38,8 +38,27 @@ class SynthesizeTask extends DefaultTask {
         FileUtils.deleteDirectory(outputDirectory)
         outputDirectory.mkdirs()
 
-        String filename = new Random().nextInt(100) + ".txt"
-        FileUtils.writeStringToFile(new File(outputDirectory, filename), "foo", StandardCharsets.ISO_8859_1)
+        // build synthesis script
+        File synthesisScript = new File(outputDirectory, "synthesis.yosys");
+        synthesisScript.withPrintWriter("ISO-8859-1", { out ->
+            out.println()
+            out.println("# read input files")
+            out.println("read_liberty -lib -ignore_miss_dir -setattr blackbox " + technologyLibertyFile)
+            for (File file : verilogDirectory.listFiles()) {
+                if (file.isFile() && file.getName().endsWith(".v")) {
+                    out.println("read_verilog " + file)
+                }
+            }
+            out.println()
+            out.println("# High-level synthesis")
+            out.println("synth -top " + toplevelModule)
+            out.println()
+            out.println("# Map register flops")
+            out.println("dfflibmap -liberty " + technologyLibertyFile)
+            out.println("opt")
+            out.println()
+        });
+
     }
 
 }
