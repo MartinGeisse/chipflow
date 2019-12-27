@@ -1,0 +1,21 @@
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    // common helper libraries
+    compile 'org.apache.commons:commons-lang3:3.0'
+    compile 'commons-io:commons-io:2.4'
+    compile 'commons-collections:commons-collections:3.2.1'
+    compile 'org.apache.commons:commons-exec:1.3'
+    compile 'com.google.guava:guava:18.0'
+    compile 'joda-time:joda-time:2.5'
+    compile 'commons-beanutils:commons-beanutils:1.9.2'
+    compile 'commons-codec:commons-codec:1.9'
+
+    // testing
+    testCompile 'junit:junit:4.12'
+
+}

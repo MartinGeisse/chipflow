@@ -13,29 +13,9 @@ source project_vars.sh
 rm -f ${synthlog} >& /dev/null
 touch ${synthlog}
 
-# Prepend techdir to libertyfile unless libertyfile begins with "/"
-set abspath=`echo ${libertyfile} | cut -c1`
-if ( "${abspath}" == "/" ) then
-   set libertypath=${libertyfile}
-else
-   set libertypath=${techdir}/${libertyfile}
-endif
-
-# Prepend techdir to spicefile unless spicefile begins with "/"
-set abspath=`echo ${spicefile} | cut -c1`
-if ( "${abspath}" == "/" ) then
-   set spicepath=${spicefile}
-else
-   set spicepath=${techdir}/${spicefile}
-endif
-
-# Prepend techdir to leffile unless leffile begins with "/"
-set abspath=`echo ${leffile} | cut -c1`
-if ( "${abspath}" == "/" ) then
-   set lefpath=${leffile}
-else
-   set lefpath=${techdir}/${leffile}
-endif
+set libertypath=techdir/osu05_stdcells.lib
+set spicepath=techdir/osu050_stdcells.sp
+set lefpath=techdir/osu050_stdcells.lef
 
 #---------------------------------------------------------------------
 # Determine hierarchy by running yosys with a simple script to check
@@ -51,19 +31,8 @@ cd ${sourcedir}
 # Generate the main yosys script
 #---------------------------------------------------------------------
 
-# Set option for generating buffers
-
 cat > ${rootname}.ys << EOF
-# Synthesis script for yosys created by qflow
-EOF
 
-# From yosys version 3.0.0+514, structural verilog using cells from the
-# the same standard cell set that is mapped by abc is supported.
-cat > ${rootname}.ys << EOF
-read_liberty -lib -ignore_miss_dir -setattr blackbox ${libertypath}
-EOF
-
-cat > ${rootname}.ys << EOF
 read_liberty -lib -ignore_miss_dir -setattr blackbox ${libertypath}
 read_verilog ${rootname}.v
 # TODO read other verilog sources
