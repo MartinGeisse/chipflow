@@ -22,14 +22,7 @@ cd ${sourcedir}
 # Spot check:  Did yosys produce file sevenseg_mapped.blif?
 #---------------------------------------------------------------------
 
-if ( !( -f sevenseg_mapped.blif )) then
-   echo "outputprep failure:  No file sevenseg_mapped.blif." \
-	|& tee -a ${synthlog}
-   echo "Premature exit." |& tee -a ${synthlog}
-   echo "Synthesis flow stopped due to error condition." >> ${synthlog}
-   # Replace the old blif file, if we had moved it
-   exit 1
-endif
+CHECK EXISTS: sevenseg_mapped.blif
 
 echo "Cleaning up output syntax" |& tee -a ${synthlog}
 ${scriptdir}/ypostproc.tcl sevenseg_mapped.blif sevenseg \
@@ -140,13 +133,7 @@ endif
 # Spot check:  Did blifFanout produce an error?
 #---------------------------------------------------------------------
 
-if ( $nchanged < 0 ) then
-   echo "blifFanout failure.  See file ${synthlog} for error messages." \
-	|& tee -a ${synthlog}
-   echo "Premature exit." |& tee -a ${synthlog}
-   echo "Synthesis flow stopped due to error condition." >> ${synthlog}
-   exit 1
-endif
+CHECK $nchanged >= 0, otherwise blifFanout failure
 
 echo "" >> ${synthlog}
 echo "Generating RTL verilog and SPICE netlist file in directory" \
@@ -171,17 +158,9 @@ ${bindir}/blif2Verilog -c -p -v ${vddnet} -g ${gndnet} sevenseg.blif \
 # so if they are missing, we flag a warning but do not exit.
 #---------------------------------------------------------------------
 
-if ( !( -f sevenseg.rtl.v || \
-        ( -M sevenseg.rtl.v < -M sevenseg.blif ))) then
-   echo "blif2Verilog failure:  No file sevenseg.rtl.v created." \
-                |& tee -a ${synthlog}
-endif
-
-if ( !( -f sevenseg.rtlnopwr.v || \
-        ( -M sevenseg.rtlnopwr.v < -M sevenseg.blif ))) then
-   echo "blif2Verilog failure:  No file sevenseg.rtlnopwr.v created." \
-                |& tee -a ${synthlog}
-endif
+#blif2Verilog checks
+CHECK EXISTS: sevenseg.rtl.v
+CHECK EXISTS: sevenseg.rtlnopwr.v
 
 #---------------------------------------------------------------------
 
@@ -200,30 +179,17 @@ ${bindir}/blif2BSpice -i -p ${vddnet} -g ${gndnet} ${spiceopt} \
 # so if they are missing, we flag a warning but do not exit.
 #---------------------------------------------------------------------
 
-if ( !( -f sevenseg.spc || \
-        ( -M sevenseg.spc < -M sevenseg.blif ))) then
-   echo "blif2BSpice failure:  No file sevenseg.spc created." \
-                |& tee -a ${synthlog}
-else
+#blif2BSpice check
+CHECK EXISTS: sevenseg.spc
 
-   echo "Running spi2xspice.py" |& tee -a ${synthlog}
-   if ("x${spicefile}" == "x") then
-       set spiceopt=""
-   else
-       set spiceopt="-l ${spicepath}"
-   endif
-   ${scriptdir}/spi2xspice.py ${libertypath} sevenseg.spc \
-		sevenseg.xspice
-endif
+ echo "Running spi2xspice.py" |& tee -a ${synthlog}
+ if ("x${spicefile}" == "x") then
+     set spiceopt=""
+ else
+     set spiceopt="-l ${spicepath}"
+ endif
+ ${scriptdir}/spi2xspice.py ${libertypath} sevenseg.spc \
+  sevenseg.xspice
 
-if ( !( -f sevenseg.xspice || \
-	( -M sevenseg.xspice < -M sevenseg.spc ))) then
-   echo "spi2xspice.py failure:  No file sevenseg.xspice created." \
-		|& tee -a ${synthlog}
-endif
-
-#---------------------------------------------------------------------
-
-cd ${projectpath}
-set endtime = `date`
-echo "Synthesis script ended on $endtime" >> $synthlog
+# spi2xspice.py check
+CHECK EXISTS: sevenseg.xspice
