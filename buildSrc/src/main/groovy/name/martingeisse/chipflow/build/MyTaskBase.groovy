@@ -6,7 +6,7 @@ class MyTaskBase extends DefaultTask {
 
     boolean checkMissingOutputFile(File file, String expectedProducer) {
         if (!file.exists()) {
-            getLogger().error("${producer} did not produce output file: " + file)
+            getLogger().error("${expectedProducer} did not produce output file: " + file)
             return true
         } else {
             return false
