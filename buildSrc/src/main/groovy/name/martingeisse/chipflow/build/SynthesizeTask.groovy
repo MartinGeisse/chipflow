@@ -60,22 +60,21 @@ class SynthesizeTask extends DefaultTask {
             out.println("# Map combinatorial cells, standard script")
             out.println("abc -exe /usr/lib/qflow/bin/yosys-abc -liberty ${technologyLibertyFile} -script +strash;scorr;ifraig;retime,{D};strash;dch,-f;map,-M,1,{D}")
             out.println("flatten")
-
-            // Purge buffering of internal net name aliases.  Option "debug"
-            // retains all internal names by buffering them, resulting in a
-            // larger layout (especially for layouts derived from hierarchical
-            // source), but one in which all signal names from the source can
-            // be probed.
+            // remove buffers which were left to preserve internal net names for probing
             out.println("clean -purge")
-
             // Output buffering, if not specifically prevented
             out.println("iopadmap -outpad BUFX2 A:Y -bits")
-
-
-
-
-
+            out.println("# Cleanup")
+            out.println("opt")
+            out.println("clean")
+            out.println("rename -enumerate")
+            out.println("write_blif -buf BUFX2 A Y design.blif")
         });
+
+        // run yosys
+        File synthesisLogfile = new File(outputDirectory, "log.txt");
+        synthesisLogfile.withWriter {}
+        "yosys -s synthesis.yosys |& tee -a ${synthesisLogfile}".execute().waitFor()
 
     }
 
