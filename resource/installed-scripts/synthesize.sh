@@ -25,8 +25,7 @@ cd ${sourcedir}
 
 
 echo "Cleaning up output syntax" |& tee -a ${synthlog}
-${scriptdir}/ypostproc.tcl yosys-out.blif sevenseg \
-	${techdir}/${techname}.sh
+${scriptdir}/ypostproc.tcl yosys-out.blif sevenseg ${techdir}/${techname}.sh
 
 #----------------------------------------------------------------------
 # Add buffers in front of all outputs (for yosys versions before 0.2.0)

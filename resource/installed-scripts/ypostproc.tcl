@@ -16,52 +16,20 @@
 # Modified for yosys, October 24, 2013
 #-------------------------------------------------------------------------
 
-if {$argc < 3} {
-   puts stderr \
-	"Usage:  ypostproc.tcl mapped_blif_file root_modname variables_file"
+
+#
+# Note: variables from ${techdir}/${techname}.sh are available!
+#
+
+
+if [catch {open yosys-out.blif r} bnet] {
+   puts stderr "Error: can't open file yosys-out.blif for reading!"
    exit 1
 }
 
-puts stdout "Yosys syntax postprocessing"
-
-set mbliffile [lindex $argv 0]
-set cellname [file rootname $mbliffile]
-if {"$cellname" == "$mbliffile"} {
-   set mbliffile ${cellname}.blif
-}
-
-set outfile ${cellname}_tmp.blif
-set rootname [lindex $argv 1]
-set varsfile [lindex $argv 2]
-
-#-------------------------------------------------------------
-# Open files for read and write
-
-if [catch {open $mbliffile r} bnet] {
-   puts stderr "Error: can't open file $mbliffile for reading!"
+if [catch {open postproc-out.blif w} onet] {
+   puts stderr "Error: can't open file postproc-out.blif for writing!"
    exit 1
-}
-
-if [catch {open $varsfile r} vfd] {
-   puts stderr "Error: can't open file $varsfile for reading!"
-   exit 1
-}
-
-if [catch {open $outfile w} onet] {
-   puts stderr "Error: can't open file $outfile for writing!"
-   exit 1
-}
-
-#-------------------------------------------------------------
-# The variables file is a UNIX tcsh script, but it can be
-# processed like a Tcl script if we substitute space for '='
-# in the "set" commands.  Then all the variables are in Tcl
-# variable space.
-#-------------------------------------------------------------
-
-while {[gets $vfd line] >= 0} {
-   set tcmd [string map {= \ } $line]
-   eval $tcmd
 }
 
 #-------------------------------------------------------------
