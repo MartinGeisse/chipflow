@@ -49,13 +49,7 @@ if (-f project_vars.sh) then
    source project_vars.sh
 endif
 
-# Prepend techdir to gdsfile unless gdsfile begins with "/"
-set abspath=`echo ${gdsfile} | cut -c1`
-if ( "${abspath}" == "/" ) then
-   set gdspath=${gdsfile}
-else
-   set gdspath=${techdir}/${gdsfile}
-endif
+set gdspath=${techdir}/osu05_stdcells.gds
 
 # Prepend techdir to techfile unless techfile begins with "/"
 set abspath=`echo ${techfile} | cut -c1`
