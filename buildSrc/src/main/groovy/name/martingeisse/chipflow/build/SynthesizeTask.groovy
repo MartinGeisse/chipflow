@@ -2,6 +2,7 @@ package name.martingeisse.chipflow.build
 
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
+import org.apache.commons.lang3.StringUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
@@ -79,6 +80,27 @@ class SynthesizeTask extends MyTaskBase {
         if (checkMissingOutputFile(synthesisOutputFile, "yosys")) {
             return
         }
+
+        // post-process yosys output (originally in ypostproc.tcl)
+        // TODO the generated alias map is never used in that script!
+//        File postProcessingOutputFile = new File(outputDirectory, "postproc-out.blif");
+//        synthesisOutputFile.eachLine {line ->
+//            line = line.replace('[', '<').replace(']', '>')
+//            String[] segments = StringUtils.split(line);
+//            if (segments.length == 3 && segments[0] == '.names') {
+//                /*
+//                   set line [string map {\[ \< \] \>} $line]
+//                   if [regexp {^.names[ \t]+([^ \t]+)[ \t]+([^ \t]+)[ \t]*$} $line lmatch signame sigalias] {
+//                      # Technically, should check if the next line is "1 1" but I don't think there are
+//                      # any exceptions in yosys output.
+//                      if [catch {set ${signame}(alias)}] {
+//                     set ${signame}(alias) {}
+//                      }
+//                      lappend ${signame}(alias) $sigalias
+//                   }
+//                 */
+//            }
+//        }
 
 
     }
