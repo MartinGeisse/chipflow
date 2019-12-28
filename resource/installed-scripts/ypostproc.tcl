@@ -115,7 +115,7 @@ while {1} {
       if {[regexp {\$true$} $line lmatch]} {
          set line [string map [subst {\\\$false $gndnet \\\$true $vddnet}] $line]
 	 if [regexp {^.names[ \t]+([^ \t]+)[ \t]+([^ \t]+)[ \t]*$} $line lmatch sigin sigout] {
-	    puts $onet ".gate ${bufcell} ${bufpin_in}=${sigin} ${bufpin_out}=${sigout}"
+	    puts $onet ".gate BUFX2 A=${sigin} Y=${sigout}"
          }
          gets $bnet line
       }

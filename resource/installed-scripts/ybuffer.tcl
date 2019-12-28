@@ -107,7 +107,7 @@ while {[gets $bnet line] >= 0} {
 # Add buffers
 
 foreach signal $outputs {
-   puts $onet " .gate ${bufcell} ${bufpin_in}=${signal}_RAW ${bufpin_out}=${signal}"
+   puts $onet " .gate BUFX2 A=${signal}_RAW Y=${signal}"
 }
 
 # Reorder the outputs in decreasing order, such that outputs that are substrings

@@ -38,9 +38,6 @@ set floppinout=Q	;# Name of the output pin on DFFs
 set floppinin=D		;# Name of the input pin on DFFs
 set floppinclk=CLK	;# Name of the clock pin on DFFs
 
-set bufcell=BUFX2	;# Minimum drive strength buffer cell
-set bufpin_in=A		;# Name of input port to buffer cell
-set bufpin_out=Y	;# Name of output port to buffer cell
 set inverter=INVX1	;# Minimum drive strength inverter cell
 set invertpin_in=A	;# Name of input port to inverter cell
 set invertpin_out=Y	;# Name of output port to inverter cell

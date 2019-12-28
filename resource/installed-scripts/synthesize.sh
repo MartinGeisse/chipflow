@@ -21,57 +21,14 @@ cd ${sourcedir}
 
 # done: generate yosys script head
 
-if ( ${?abc_script} ) then
-   if ( ${abc_script} != "" ) then
-      cat >> ${rootname}.ys << EOF
-abc -exe ${bindir}/yosys-abc -liberty ${libertypath} -script ${abc_script}
-flatten
 
-EOF
-   else
-      echo "Warning: no abc script ${abc_script}, using default, no script" \
-		|& tee -a ${synthlog}
-      cat >> ${rootname}.ys << EOF
-abc -exe ${bindir}/yosys-abc -liberty ${libertypath}
-flatten
-
-EOF
-   endif
-else
-   cat >> ${rootname}.ys << EOF
-# Map combinatorial cells, standard script
-abc -exe ${bindir}/yosys-abc -liberty ${libertypath} -script +strash;scorr;ifraig;retime,{D};strash;dch,-f;map,-M,1,{D}
-flatten
-
-EOF
-endif
-
-# Purge buffering of internal net name aliases.  Option "debug"
-# retains all internal names by buffering them, resulting in a
-# larger layout (especially for layouts derived from hierarchical
-# source), but one in which all signal names from the source can
-# be probed.
-
-if ( ! ${?yosys_debug} ) then
-   cat >> ${rootname}.ys << EOF
-clean -purge
-EOF
-endif
-
-# Output buffering, if not specifically prevented
-if (!($?nobuffers)) then
-       cat >> ${rootname}.ys << EOF
-# Output buffering
-iopadmap -outpad ${bufcell} ${bufpin_in}:${bufpin_out} -bits
-EOF
-endif
 
 cat >> ${rootname}.ys << EOF
 # Cleanup
 opt
 clean
 rename -enumerate
-write_blif ${blif_opts} -buf ${bufcell} ${bufpin_in} ${bufpin_out} ${rootname}_mapped.blif
+write_blif ${blif_opts} -buf BUFX2 A Y ${rootname}_mapped.blif
 EOF
 
 
@@ -129,11 +86,11 @@ set final_blif = "${rootname}_mapped_tmp.blif"
 
 echo "Cleaning Up blif file syntax" |& tee -a ${synthlog}
 
-set subs0a="/LOGIC0/s/O=/${bufpin_in}=gnd ${bufpin_out}=/"
-set subs0b="/LOGIC0/s/LOGIC0/${bufcell}/"
+set subs0a="/LOGIC0/s/O=/A=gnd Y=/"
+set subs0b="/LOGIC0/s/LOGIC0/BUFX2/"
 
-set subs1a="/LOGIC1/s/O=/${bufpin_in}=vdd ${bufpin_out}=/"
-set subs1b="/LOGIC1/s/LOGIC1/${bufcell}/"
+set subs1a="/LOGIC1/s/O=/A=vdd Y=/"
+set subs1b="/LOGIC1/s/LOGIC1/BUFX2/"
 
 #---------------------------------------------------------------------
 # Remove backslashes, references to "$techmap", and
@@ -201,10 +158,10 @@ else
          else
 	    set sepoption="-s ${separator}"
          endif
-         if ("x${bufcell}" == "x") then
+         if ("xBUFX2" == "x") then
 	    set bufoption=""
          else
-	    set bufoption="-b ${bufcell} -i ${bufpin_in} -o ${bufpin_out}"
+	    set bufoption="-b BUFX2 -i A -o Y"
          endif
          ${bindir}/blifFanout ${fanout_options} -I ${rootname}_nofanout \
 		-p ${libertypath} ${sepoption} ${bufoption} \

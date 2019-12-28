@@ -43,20 +43,38 @@ class SynthesizeTask extends DefaultTask {
         synthesisScript.withPrintWriter("ISO-8859-1", { out ->
             out.println()
             out.println("# read input files")
-            out.println("read_liberty -lib -ignore_miss_dir -setattr blackbox " + technologyLibertyFile)
+            out.println("read_liberty -lib -ignore_miss_dir -setattr blackbox ${technologyLibertyFile}")
             for (File file : verilogDirectory.listFiles()) {
                 if (file.isFile() && file.getName().endsWith(".v")) {
-                    out.println("read_verilog " + file)
+                    out.println("read_verilog ${file}")
                 }
             }
             out.println()
             out.println("# High-level synthesis")
-            out.println("synth -top " + toplevelModule)
+            out.println("synth -top ${toplevelModule}")
             out.println()
             out.println("# Map register flops")
-            out.println("dfflibmap -liberty " + technologyLibertyFile)
+            out.println("dfflibmap -liberty ${technologyLibertyFile}")
             out.println("opt")
             out.println()
+            out.println("# Map combinatorial cells, standard script")
+            out.println("abc -exe /usr/lib/qflow/bin/yosys-abc -liberty ${technologyLibertyFile} -script +strash;scorr;ifraig;retime,{D};strash;dch,-f;map,-M,1,{D}")
+            out.println("flatten")
+
+            // Purge buffering of internal net name aliases.  Option "debug"
+            // retains all internal names by buffering them, resulting in a
+            // larger layout (especially for layouts derived from hierarchical
+            // source), but one in which all signal names from the source can
+            // be probed.
+            out.println("clean -purge")
+
+            // Output buffering, if not specifically prevented
+            out.println("iopadmap -outpad BUFX2 A:Y -bits")
+
+
+
+
+
         });
 
     }
