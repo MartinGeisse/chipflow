@@ -11,7 +11,7 @@ import org.gradle.api.tasks.TaskAction
 
 import java.nio.charset.StandardCharsets
 
-class SynthesizeTask extends DefaultTask {
+class SynthesizeTask extends MyTaskBase {
 
     @InputDirectory
     File verilogDirectory = getProject().file("src/verilog");
@@ -40,6 +40,7 @@ class SynthesizeTask extends DefaultTask {
 
         // build synthesis script
         File synthesisScript = new File(outputDirectory, "synthesis.yosys");
+        File synthesisOutputFile = new File(outputDirectory, "yosys-out.blif")
         synthesisScript.withPrintWriter("ISO-8859-1", { out ->
             out.println()
             out.println("# read input files")
@@ -68,13 +69,17 @@ class SynthesizeTask extends DefaultTask {
             out.println("opt")
             out.println("clean")
             out.println("rename -enumerate")
-            out.println("write_blif -buf BUFX2 A Y design.blif")
+            out.println("write_blif -buf BUFX2 A Y ${synthesisOutputFile}")
         });
 
         // run yosys
         File synthesisLogfile = new File(outputDirectory, "log.txt");
         synthesisLogfile.withWriter {}
         "yosys -s synthesis.yosys |& tee -a ${synthesisLogfile}".execute().waitFor()
+        if (checkMissingOutputFile(synthesisOutputFile, "yosys")) {
+            return
+        }
+
 
     }
 

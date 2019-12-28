@@ -18,14 +18,14 @@ set lefpath=techdir/osu050_stdcells.lef
 cd ${sourcedir}
 
 
-#---------------------------------------------------------------------
-# Spot check:  Did yosys produce file sevenseg_mapped.blif?
-#---------------------------------------------------------------------
 
-CHECK EXISTS: sevenseg_mapped.blif
+
+
+
+
 
 echo "Cleaning up output syntax" |& tee -a ${synthlog}
-${scriptdir}/ypostproc.tcl sevenseg_mapped.blif sevenseg \
+${scriptdir}/ypostproc.tcl yosys-out.blif sevenseg \
 	${techdir}/${techname}.sh
 
 #----------------------------------------------------------------------
@@ -53,7 +53,7 @@ set subs1b="/LOGIC1/s/LOGIC1/BUFX2/"
 # form node<c>_FF_INPUT
 #---------------------------------------------------------------------
 
-cat sevenseg_mapped_tmp.blif | sed \
+cat yosys-out_tmp.blif | sed \
 	-e "$subs0a" -e "$subs0b" -e "$subs1a" -e "$subs1b" \
 	-e 's/\\\([^$]\)/\1/g' \
 	-e 's/$techmap//g' \
