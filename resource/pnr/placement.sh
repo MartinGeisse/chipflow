@@ -23,31 +23,6 @@ set lefpath=techdir/osu050_stdcells.lef
 touch place-log.txt
 
 #-------------------------------------------------------------------------
-# Create the .cel file for GrayWolf
-#-------------------------------------------------------------------------
-
-cd ${projectpath}
-
-echo "Running blif2cel.tcl" |& tee -a place-log.txt
-
-${scriptdir}/blif2cel.tcl --blif ${synthdir}/${rootname}.blif \
-	--lef ${lefpath} --cel ${layoutdir}/${rootname}.cel >>& place-log.txt
-
-#---------------------------------------------------------------------
-# Spot check:  Did blif2cel produce file ${rootname}.cel?
-#---------------------------------------------------------------------
-
-if ( !( -f ${layoutdir}/${rootname}.cel || ( -M ${layoutdir}/${rootname}.cel \
-	< -M ${rootname}.blif ))) then
-   echo "blif2cel failure:  No file ${rootname}.cel." |& tee -a place-log.txt
-   echo "blif2cel was called with arguments: ${synthdir}/${rootname}.blif "
-   echo "      ${lefpath} ${layoutdir}/${rootname}.cel"
-   echo "Premature exit." |& tee -a place-log.txt
-   echo "Synthesis flow stopped due to error condition." >> place-log.txt
-   exit 1
-endif
-
-#-------------------------------------------------------------------------
 # If placement option "initial_density" is set, run the decongest
 # script.  This will annotate the .cel file with fill cells to pad
 # out the area to the specified density.
