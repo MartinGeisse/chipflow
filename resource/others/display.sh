@@ -29,28 +29,10 @@ cd ${layoutdir}
 #---------------------------------------------------
 
 
-# Timestamp handling:  If the .mag file is more recent
-# than the .def file, then print a message and do not
-# overwrite.
-
-set docreate=1
-if ( -f ${rootname}.def && -f ${rootname}.mag) then
-   set defstamp=`stat --format="%Y" ${rootname}.def`
-   set magstamp=`stat --format="%Y" ${rootname}.mag`
-   if ( $magstamp > $defstamp ) then
-      echo "Magic database file ${rootname}.mag is more recent than DEF file."
-      echo "If you want to recreate the .mag file, remove or rename the existing one."
-      set docreate=0
-   endif
-endif
-
-set dispfile="${layoutdir}/load_${rootname}.tcl"
-
 # The following script reads in the DEF file and modifies labels so
 # that they are rotated outward from the cell, since DEF files don't
 # indicate label geometry.
 
-if ( ${docreate} == 1) then
 ${bindir}/magic -dnull -noconsole <<EOF
 drc off
 box 0 0 0 0
@@ -87,6 +69,7 @@ EOF
 # Create a script file for loading and displaying the
 # layout.
 
+set dispfile="${layoutdir}/load_${rootname}.tcl"
 if ( ! -f ${dispfile} ) then
 cat > ${dispfile} << EOF
 lef read ${lefpath}
@@ -96,61 +79,18 @@ expand
 EOF
 endif
 
-endif
 
-# Run magic and query what graphics device types are
-# available.  Use OpenGL if available, fall back on
-# X11, or else exit with a message
 
-# support option to hardwire X11, don't want OGL thru x2go, etc.: too slow or corrupts the desktop session somehow.
-# Even JUST "magic -noconsole -d" to QUERY the displays, may corrupt an x2go xfce desktop session somehow.
 
-set magicogl=0
-set magicx11=0
 
-if ( ! $?magic_display ) then
-  ${bindir}/magic -noconsole -d <<EOF >& .magic_displays
-exit
-EOF
+# For magic versions less than 8.1.102, only the .mag file can be loaded from the command line.  Otherwise, run the script.
+# TODO: I have magic 8.0 rev 210
 
-  set magicogl=`cat .magic_displays | grep OGL | wc -l`
-  set magicx11=`cat .magic_displays | grep X11 | wc -l`
-
-  rm -f .magic_displays
-endif
-
-# Get the version of magic
-
-${bindir}/magic -noconsole --version <<EOF >& .magic_version
-exit
-EOF
-
-set magic_major=`cat .magic_version | cut -d. -f1`
-set magic_minor=`cat .magic_version | cut -d. -f2`
-set magic_rev=`cat .magic_version | cut -d. -f3`
-
-rm -f .magic_version
-
-# For magic versions less than 8.1.102, only the .mag file can
-# be loaded from the command line.  Otherwise, run the script.
-
-if ( ${magic_major} < 8 || ( ${magic_major} == 8 && ${magic_minor} < 1 ) || ( ${magic_major} == 8 && ${magic_minor} == 1 && ${magic_rev} < 102 ) ) then
+if ( version less than 8.1.102 ) then
    set dispfile = ${sourcename}
 endif
 
 # Run magic again, this time interactively.  The script
 # exits when the user exits magic.
 
-if ( $?magic_display ) then
-   ${bindir}/magic -d ${magic_display} ${dispfile}
-else if ( ${magicogl} >= 1 ) then
-   ${bindir}/magic -d OGL ${dispfile}
-else if ( ${magicx11} >= 1) then
-   ${bindir}/magic -d X11 ${dispfile}
-else
-   echo "Magic does not support OpenGL or X11 graphics on this host."
-endif
-
-#------------------------------------------------------------
-# Done!
-#------------------------------------------------------------
+${bindir}/magic -d X11 ${dispfile}
