@@ -29,33 +29,6 @@ cd ${layoutdir}
 
 
 
- # Create the main configuration file
-
- # Variables "via_pattern" (none, normal, invert) and "via_stacks"
- # can be specified in the tech script, and are appended to the
- # qrouter configuration file.  via_stacks defaults to 2 if not
- # specified.  It can be overridden from the user's .cfg2 file.
-
-    echo "# qrouter runtime script for project ${rootname}" > ${rootname}.cfg
-    echo "" >> ${rootname}.cfg
-    echo "verbose 1" >> ${rootname}.cfg
-    echo "read_lef ${lefpath}" >> ${rootname}.cfg
-    echo "catch {layers ${route_layers}}" >> ${rootname}.cfg
-    if ( ${?via_pattern} ) then
-       echo "" >> ${rootname}.cfg
-       echo "via pattern ${via_pattern}" >> ${rootname}.cfg
-    endif
-    if (! ${?via_stacks} ) then
-       set via_stacks=2
-       echo "via stack ${via_stacks}" >> ${rootname}.cfg
-    endif
-    if ( ${?vddnet} ) then
-        echo "vdd $vddnet" >> ${rootname}.cfg
-    endif
-    if ( ${?gndnet} ) then
-        echo "gnd $gndnet" >> ${rootname}.cfg
-    endif
-
 
  # Add obstruction fence around design, created by place2def.tcl
  # and modified by addspacers.tcl
@@ -92,8 +65,7 @@ cd ${layoutdir}
  # netlists.
  #------------------------------------------------------------------
 
- ${scriptdir}/blifanno.tcl ${synthdir}/${rootname}.blif ${rootname}.def \
-  ${synthdir}/${rootname}_anno.blif >>& place-log.txt
+ ${scriptdir}/blifanno.tcl ${synthdir}/${rootname}.blif ${rootname}.def ${synthdir}/${rootname}_anno.blif >>& place-log.txt
 
  #------------------------------------------------------------------
  # Spot check:  Did blifanno.tcl produce an output file?

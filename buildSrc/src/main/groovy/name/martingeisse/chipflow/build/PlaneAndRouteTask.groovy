@@ -116,6 +116,8 @@ class PlaneAndRouteTask extends MyTaskBase {
         //
 
         while (true) {
+            File designDefFile = new File(outputDirectory, "design.def")
+            File designObsFile = new File(outputDirectory, "design.obs")
 
             // TODO it is currently unclear to me whether a second iteration should use the DEF file from the router
             // or the original one. This was really hard to see from the original scripts.
@@ -131,18 +133,16 @@ class PlaneAndRouteTask extends MyTaskBase {
             }
 
             execute("${scriptDirectory}/place2def.tcl ${rootFile} FILL >>& ${logfile}")
-            if (checkMissingOutputFile(new File(outputDirectory, "design.def"), "place2def.tcl")) {
+            if (checkMissingOutputFile(designDefFile, "place2def.tcl")) {
                 return
             }
 
             execute("${scriptDirectory}/addspacers.tcl -stripe 5 200 PG -nostretch ${rootFile} ${technologyLefFile} FILL >>& ${logfile}")
-            File designDefFile = new File(outputDirectory, "design.def")
             File designFilledDefFile = new File(outputDirectory, "design_filled.def")
             if (designFilledDefFile.exists()) {
                 designDefFile.delete()
                 designFilledDefFile.renameTo(designDefFile)
             }
-            File designObsFile = new File(outputDirectory, "design.obs")
             File designObsxFile = new File(outputDirectory, "design.obsx")
             if (designObsxFile.exists()) {
                 designObsFile.delete()
@@ -155,17 +155,26 @@ class PlaneAndRouteTask extends MyTaskBase {
             // router
             //
 
+            File routerScript = new File(outputDirectory, "design.cfg");
+            routerScript.withPrintWriter("ISO-8859-1", { out ->
+                out.println("verbose 1")
+                out.println("read_lef ${technologyLefFile}")
+                out.println("catch {layers ${routingLayers}}")
+                // out.println("via pattern ${via_pattern}") // TODO "via_pattern" (none, normal, invert)
+                out.println("via stack 2")
+                out.println("vdd vdd")
+                out.println("gnd gnd")
+            })
+
+
+
+
+
+            //
+            // ??? TODO
+            //
+
             File acelOutputFile
-
-
-
-
-
-
-
-
-
-
 
             if (!acelOutputFile.exists()) {
                 break;
