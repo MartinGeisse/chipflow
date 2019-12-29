@@ -15,8 +15,8 @@ class SynthesizeTask extends MyTaskBase {
     @Input
     String toplevelModule;
 
-    @OutputDirectory
-    File outputDirectory = project.file("${project.buildDir}/chipflow/synthesize");
+    @InputDirectory
+    File toolDirectory = new File("/usr/lib/qflow/bin");
 
     @InputFile
     File technologyLibertyFile
@@ -26,6 +26,9 @@ class SynthesizeTask extends MyTaskBase {
 
     @InputFile
     File technologyLefFile
+
+    @OutputDirectory
+    File outputDirectory = project.file("${project.buildDir}/chipflow/synthesize");
 
     @TaskAction
     void run() {
@@ -80,7 +83,7 @@ class SynthesizeTask extends MyTaskBase {
 
         File synthesisLogfile = new File(outputDirectory, "log.txt");
         synthesisLogfile.withWriter {}
-        "yosys -s synthesis.yosys |& tee -a ${synthesisLogfile}".execute().waitFor()
+        execute("${toolDirectory}/yosys -s ${yosysScript} |& tee -a ${synthesisLogfile}")
         if (checkMissingOutputFile(yosysOutputFile, "yosys")) {
             return
         }
@@ -143,25 +146,25 @@ class SynthesizeTask extends MyTaskBase {
         //
 
         File outputVerilogFile = new File(outputDirectory, "synthesized.v")
-        "blif2Verilog -c -v vdd -g gnd ${finalBlifFile} > ${outputVerilogFile}".execute().waitFor()
+        execute("${toolDirectory}/blif2Verilog -c -v vdd -g gnd ${finalBlifFile} > ${outputVerilogFile}")
         if (checkMissingOutputFile(outputVerilogFile, "blif2Verilog")) {
             return
         }
 
         File outputVerilogNopowerFile = new File(outputDirectory, "synthesized-nopower.v")
-        "blif2Verilog -c -p -v vdd -g gnd ${finalBlifFile} > ${outputVerilogNopowerFile}".execute().waitFor()
+        execute("${toolDirectory}/blif2Verilog -c -p -v vdd -g gnd ${finalBlifFile} > ${outputVerilogNopowerFile}")
         if (checkMissingOutputFile(outputVerilogNopowerFile, "blif2Verilog")) {
             return
         }
 
         File outputBSpiceFile = new File(outputDirectory, "synthesized.spc")
-        "blif2BSpice -i -p vdd -g gnd -l ${technologySpiceFile} ${finalBlifFile} > ${outputBSpiceFile}"
+        execute("${toolDirectory}/blif2BSpice -i -p vdd -g gnd -l ${technologySpiceFile} ${finalBlifFile} > ${outputBSpiceFile}")
         if (checkMissingOutputFile(outputBSpiceFile, "blif2BSpice")) {
             return
         }
 
         File outputXSpiceFile = new File(outputDirectory, "synthesized.xspice")
-        "spi2xspice.py ${technologyLibertyFile} ${outputBSpiceFile} ${outputXSpiceFile}"
+        execute("${toolDirectory}/spi2xspice.py ${technologyLibertyFile} ${outputBSpiceFile} ${outputXSpiceFile}")
         if (checkMissingOutputFile(outputXSpiceFile, "spi2xspice.py")) {
             return
         }
