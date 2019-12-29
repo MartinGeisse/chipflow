@@ -57,8 +57,7 @@ cd ${layoutdir}
 
 if ( ${?initial_density} ) then
    echo "Running decongest to set initial density of ${initial_density}"
-   ${scriptdir}/decongest.tcl ${rootname} ${lefpath} \
-		${fillcell} ${initial_density} |& tee -a place-log.txt
+   ${scriptdir}/decongest.tcl ${rootname} ${lefpath} ${fillcell} ${initial_density} |& tee -a place-log.txt
    cp ${rootname}.cel ${rootname}.cel.bak
    mv ${rootname}.acel ${rootname}.cel
 endif
@@ -95,19 +94,9 @@ else
    echo "continuing without pin placement hints" |& tee -a place-log.txt
 endif
 
-# Add fill cells for the power bus stripes
-# (this is work in progress, commented out for now)
-
-# echo "Running powerbus to add spacers for power bus stripes" |& tee -a place-log.txt
-# ${scriptdir}/powerbus.tcl ${rootname} ${lefpath} ${fillcell} |& tee -a place-log.txt
-
-# powerbus.tcl creates a .acel file if successful.  If not, then
-# leave the .cel file in place
-
-if ( -f ${rootname}.acel && ( -M ${rootname}.acel >= -M ${rootname}.cel )) then
-   cp ${rootname}.cel ${rootname}.cel.bak
-   mv ${rootname}.acel ${rootname}.cel
-endif
+#
+# TODO adding power bus stripes was commented out in the original script since it is unfinished work
+#
 
 #-----------------------------------------------
 # 1) Run GrayWolf
@@ -129,12 +118,7 @@ endif
 # Spot check:  Did GrayWolf produce file ${rootname}.pin?
 #---------------------------------------------------------------------
 
-if ( !( -f ${rootname}.pin || ( -M ${rootname}.pin < -M ${rootname}.cel ))) then
-   echo "GrayWolf failure:  No file ${rootname}.pin." |& tee -a place-log.txt
-   echo "Premature exit." |& tee -a place-log.txt
-   echo "Synthesis flow stopped due to error condition." >> place-log.txt
-   exit 1
-endif
+# TODO check exists: ${rootname}.pin
 
 #---------------------------------------------------
 # 2) Prepare DEF and .cfg files for qrouter

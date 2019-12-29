@@ -152,10 +152,8 @@ endif
 #---------------------------------------------------------------------
 
 if (${scripting} == "T") then
-   if ( -f ${rootname}.cinfo && ( -M ${rootname}.cinfo \
-		> -M ${rootname}.def )) then
-      ${scriptdir}/decongest.tcl ${rootname} ${lefpath} \
-		${fillcell} |& tee -a ${synthlog}
+   if ( -f ${rootname}.cinfo && ( -M ${rootname}.cinfo > -M ${rootname}.def )) then
+      ${scriptdir}/decongest.tcl ${rootname} ${lefpath} ${fillcell} |& tee -a ${synthlog}
    endif
 endif
 
