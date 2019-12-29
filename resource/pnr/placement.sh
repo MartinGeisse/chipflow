@@ -30,31 +30,6 @@ cd ${layoutdir}
 
 
 
- # Add obstruction fence around design, created by place2def.tcl
- # and modified by addspacers.tcl
-
- if ( -f ${rootname}.obs ) then
-    cat ${rootname}.obs >> ${rootname}.cfg
- endif
-
- # Scripted version continues with the read-in of the DEF file
-
-    echo "read_def ${rootname}.def" >> ${rootname}.cfg
-
- # If there is a file called ${rootname}.cfg2, then append it to the
- # ${rootname}.cfg file.  It will be used to define all routing behavior.
- # Otherwise, if using scripting, then append the appropriate routing
- # command or procedure based on whether this is a pre-congestion
- # estimate of routing or the final routing pass.
-
- if ( -f ${rootname}.cfg2 ) then
-    cat ${rootname}.cfg2 >> ${rootname}.cfg
- else
-       echo "qrouter::standard_route" >> ${rootname}.cfg
-       # Standard route falls back to the interpreter on failure,
-       # so make sure that qrouter actually exits.
-       echo "quit" >> ${rootname}.cfg
- endif
 
  #------------------------------------------------------------------
  # Automatic optimization of buffer tree placement causes the

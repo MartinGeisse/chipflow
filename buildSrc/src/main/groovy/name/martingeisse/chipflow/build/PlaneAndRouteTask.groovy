@@ -101,7 +101,7 @@ class PlaneAndRouteTask extends MyTaskBase {
             return
         }
         int routingLayers = 0
-        routerInfoFile.eachLine {line ->
+        routerInfoFile.eachLine { line ->
             if (line.contains("horizontal") && line.contains("vertical")) {
                 routingLayers++
             }
@@ -150,7 +150,6 @@ class PlaneAndRouteTask extends MyTaskBase {
             }
 
 
-
             //
             // router
             //
@@ -164,10 +163,13 @@ class PlaneAndRouteTask extends MyTaskBase {
                 out.println("via stack 2")
                 out.println("vdd vdd")
                 out.println("gnd gnd")
+                if (designObsFile.exists()) {
+                    designObsFile.eachLine { line -> out.println(line) }
+                }
+                out.println("read_def design.def")
+                out.println("qrouter::standard_route")
+                out.println("quit")
             })
-
-
-
 
 
             //
