@@ -14,7 +14,7 @@ class MyTaskBase extends DefaultTask {
     }
 
     boolean execute(String command) {
-        ProcessBuilder builder = new ProcessBuilder("sh", "-c", command)
+        ProcessBuilder builder = new ProcessBuilder("bash", "-c", command)
         builder.redirectOutput(ProcessBuilder.Redirect.INHERIT)
         builder.redirectError(ProcessBuilder.Redirect.INHERIT)
         int exitCode = builder.start().waitFor()

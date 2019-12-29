@@ -7,6 +7,8 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
+import java.nio.file.Files
+
 class SynthesizeTask extends MyTaskBase {
 
     @InputDirectory
@@ -17,6 +19,9 @@ class SynthesizeTask extends MyTaskBase {
 
     @InputDirectory
     File toolDirectory = new File("/usr/lib/qflow/bin");
+
+    @InputDirectory
+    File scriptDirectory = new File("/usr/lib/qflow/scripts");
 
     @InputFile
     File technologyLibertyFile
@@ -81,9 +86,8 @@ class SynthesizeTask extends MyTaskBase {
         // run yosys
         //
 
-        File synthesisLogfile = new File(outputDirectory, "log.txt");
-        synthesisLogfile.withWriter {}
-        execute("${toolDirectory}/yosys -s ${yosysScript} |& tee -a ${synthesisLogfile}")
+        File yosysLogfile = new File(outputDirectory, "yosys-log.txt");
+        execute("${toolDirectory}/yosys -s ${yosysScript} &> ${yosysLogfile}")
         if (checkMissingOutputFile(yosysOutputFile, "yosys")) {
             return
         }
@@ -139,7 +143,7 @@ class SynthesizeTask extends MyTaskBase {
         //
 
         File finalBlifFile = new File(outputDirectory, "synthesized.blif");
-        Files.copy(yosysOutputFile, finalBlifFile)
+        Files.copy(yosysOutputFile.toPath(), finalBlifFile.toPath())
 
         //
         // produce output files in various formats
@@ -164,7 +168,7 @@ class SynthesizeTask extends MyTaskBase {
         }
 
         File outputXSpiceFile = new File(outputDirectory, "synthesized.xspice")
-        execute("${toolDirectory}/spi2xspice.py ${technologyLibertyFile} ${outputBSpiceFile} ${outputXSpiceFile}")
+        execute("${scriptDirectory}/spi2xspice.py ${technologyLibertyFile} ${outputBSpiceFile} ${outputXSpiceFile}")
         if (checkMissingOutputFile(outputXSpiceFile, "spi2xspice.py")) {
             return
         }
