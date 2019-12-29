@@ -36,24 +36,11 @@ cd ${layoutdir}
 # to the LEF files when generating layer information using the "-i" option.
 
 
- #------------------------------------------------------------------
- # Determine the version number and availability of scripting
- # in qrouter.
- #------------------------------------------------------------------
 
- set version=`${bindir}/qrouter -v 0 -h | tail -1`
- set major=`echo $version | cut -d. -f1`
- set minor=`echo $version | cut -d. -f2`
- set subv=`echo $version | cut -d. -f3`
- set scripting=`echo $version | cut -d. -f4`
 
  # Create the initial (bootstrap) configuration file
 
- if ( $scripting == "T" ) then
-    echo "read_lef ${lefpath}" > ${rootname}.cfg
- else
-    echo "lef ${lefpath}" > ${rootname}.cfg
- endif
+echo "read_lef ${lefpath}" > ${rootname}.cfg
 
  ${bindir}/qrouter -i ${rootname}.info -c ${rootname}.cfg
 
@@ -149,7 +136,6 @@ ${lefpath} $fillcell | grep fill= | cut -d= -f2`
  # qrouter configuration file.  via_stacks defaults to 2 if not
  # specified.  It can be overridden from the user's .cfg2 file.
 
- if (${scripting} == "T") then
     echo "# qrouter runtime script for project ${rootname}" > ${rootname}.cfg
     echo "" >> ${rootname}.cfg
     echo "verbose 1" >> ${rootname}.cfg
@@ -164,26 +150,12 @@ ${lefpath} $fillcell | grep fill= | cut -d= -f2`
        echo "via stack ${via_stacks}" >> ${rootname}.cfg
     endif
     if ( ${?vddnet} ) then
- echo "vdd $vddnet" >> ${rootname}.cfg
+        echo "vdd $vddnet" >> ${rootname}.cfg
     endif
     if ( ${?gndnet} ) then
- echo "gnd $gndnet" >> ${rootname}.cfg
+        echo "gnd $gndnet" >> ${rootname}.cfg
     endif
 
- else
-    echo "# qrouter configuration for project ${rootname}" > ${rootname}.cfg
-    echo "" >> ${rootname}.cfg
-    echo "lef ${lefpath}" >> ${rootname}.cfg
-    echo "num_layers ${route_layers}" >> ${rootname}.cfg
-    if ( ${?via_pattern} ) then
-       echo "" >> ${rootname}.cfg
-       echo "via pattern ${via_pattern}" >> ${rootname}.cfg
-    endif
-    if (! ${?via_stacks} ) then
-       set via_stacks=2
-       echo "stack ${via_stacks}" >> ${rootname}.cfg
-    endif
- endif
 
  # Add obstruction fence around design, created by place2def.tcl
  # and modified by addspacers.tcl
@@ -194,9 +166,7 @@ ${lefpath} $fillcell | grep fill= | cut -d= -f2`
 
  # Scripted version continues with the read-in of the DEF file
 
- if (${scripting} == "T") then
     echo "read_def ${rootname}.def" >> ${rootname}.cfg
- endif
 
  # If there is a file called ${rootname}.cfg2, then append it to the
  # ${rootname}.cfg file.  It will be used to define all routing behavior.
@@ -207,12 +177,10 @@ ${lefpath} $fillcell | grep fill= | cut -d= -f2`
  if ( -f ${rootname}.cfg2 ) then
     cat ${rootname}.cfg2 >> ${rootname}.cfg
  else
-    if (${scripting} == "T") then
- echo "qrouter::standard_route" >> ${rootname}.cfg
- # Standard route falls back to the interpreter on failure,
- # so make sure that qrouter actually exits.
- echo "quit" >> ${rootname}.cfg
-    endif
+       echo "qrouter::standard_route" >> ${rootname}.cfg
+       # Standard route falls back to the interpreter on failure,
+       # so make sure that qrouter actually exits.
+       echo "quit" >> ${rootname}.cfg
  endif
 
  #------------------------------------------------------------------
