@@ -1,3 +1,4 @@
+import name.martingeisse.chipflow.build.PlaneAndRouteTask
 import name.martingeisse.chipflow.build.SynthesizeTask
 
 apply plugin: 'base'
@@ -9,6 +10,15 @@ task synthesize(type: SynthesizeTask) {
     technologyLibertyFile = new File("${techdir}/osu05_stdcells.lib")
     technologySpiceFile = new File("${techdir}/osu050_stdcells.sp")
     technologyLefFile = new File("${techdir}/osu050_stdcells.lef")
+}
 
+task pnr(type: PlaneAndRouteTask) {
+    dependsOn 'synthesize'
 
+    toplevelModule = "SevenSegmentDecoder"
+
+    def techdir = "/usr/share/qflow/tech/osu050"
+    technologyLibertyFile = new File("${techdir}/osu05_stdcells.lib")
+    technologySpiceFile = new File("${techdir}/osu050_stdcells.sp")
+    technologyLefFile = new File("${techdir}/osu050_stdcells.lef")
 }
