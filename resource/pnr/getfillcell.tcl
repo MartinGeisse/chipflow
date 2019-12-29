@@ -129,11 +129,11 @@ while {[gets $flef line] >= 0} {
       # Parse the "macro" statement
       parse_macro $flef $macroname
       if {[string first $fillcell $macroname] == 0} {
-	 # Check width against feedthrough width
-	 puts stdout "Diagnostic:  macro $macroname width = [subst \$${macroname}(w)]"
-	 if {[subst \$${macroname}(w)] == $fwidth} {
-	    set usefillcell $macroname
-	 }
+         # Check width against feedthrough width
+         puts stdout "Diagnostic:  macro $macroname width = [subst \$${macroname}(w)]"
+         if {[subst \$${macroname}(w)] == $fwidth} {
+            set usefillcell $macroname
+         }
       }
    } elseif [regexp {[ \t]*LAYER[ \t]+([^ \t]+)} $line lmatch layername] {
       skip_section $flef $layername
