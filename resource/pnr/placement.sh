@@ -23,39 +23,19 @@ source ${techdir}/${techname}.sh
 cd ${projectpath}
 source project_vars.sh
 
-# Prepend techdir to leffile unless leffile begins with "/"
-set abspath=`echo ${leffile} | cut -c1`
-if ( "${abspath}" == "/" ) then
-   set lefpath=${leffile}
-else
-   set lefpath=${techdir}/${leffile}
-endif
+set spicepath=techdir/osu050_stdcells.sp
+set lefpath=techdir/osu050_stdcells.lef
 
-# Prepend techdir to techleffile unless techleffile begins with "/"
-set abspath=`echo ${techleffile} | cut -c1`
-if ( "${abspath}" == "/" ) then
-   set techlefpath=${techleffile}
-else
-   set techlefpath=${techdir}/${techleffile}
-endif
-
-# Prepend techdir to spicefile unless spicefile begins with "/"
-set abspath=`echo ${spicefile} | cut -c1`
-if ( "${abspath}" == "/" ) then
-   set spicepath=${spicefile}
-else
-   set spicepath=${techdir}/${spicefile}
-endif
 
 # logfile should exist, but just in case. . .
-touch ${synthlog}
+touch place-log.txt
 
 #----------------------------------------------------------
 # Done with initialization
 #----------------------------------------------------------
 
 # Check if last line of log file says "error condition"
-set errcond = `tail -1 ${synthlog} | grep "error condition" | wc -l`
+set errcond = `tail -1 place-log.txt | grep "error condition" | wc -l`
 if ( ${errcond} == 1 ) then
    echo "Synthesis flow stopped on error condition.  Placement will not proceed"
    echo "until error condition is cleared."
@@ -68,10 +48,10 @@ endif
 
 cd ${projectpath}
 
-echo "Running blif2cel.tcl" |& tee -a ${synthlog}
+echo "Running blif2cel.tcl" |& tee -a place-log.txt
 
 ${scriptdir}/blif2cel.tcl --blif ${synthdir}/${rootname}.blif \
-	--lef ${lefpath} --cel ${layoutdir}/${rootname}.cel >>& ${synthlog}
+	--lef ${lefpath} --cel ${layoutdir}/${rootname}.cel >>& place-log.txt
 
 #---------------------------------------------------------------------
 # Spot check:  Did blif2cel produce file ${rootname}.cel?
@@ -79,11 +59,11 @@ ${scriptdir}/blif2cel.tcl --blif ${synthdir}/${rootname}.blif \
 
 if ( !( -f ${layoutdir}/${rootname}.cel || ( -M ${layoutdir}/${rootname}.cel \
 	< -M ${rootname}.blif ))) then
-   echo "blif2cel failure:  No file ${rootname}.cel." |& tee -a ${synthlog}
+   echo "blif2cel failure:  No file ${rootname}.cel." |& tee -a place-log.txt
    echo "blif2cel was called with arguments: ${synthdir}/${rootname}.blif "
    echo "      ${lefpath} ${layoutdir}/${rootname}.cel"
-   echo "Premature exit." |& tee -a ${synthlog}
-   echo "Synthesis flow stopped due to error condition." >> ${synthlog}
+   echo "Premature exit." |& tee -a place-log.txt
+   echo "Synthesis flow stopped due to error condition." >> place-log.txt
    exit 1
 endif
 
@@ -98,7 +78,7 @@ cd ${layoutdir}
 if ( ${?initial_density} ) then
    echo "Running decongest to set initial density of ${initial_density}"
    ${scriptdir}/decongest.tcl ${rootname} ${lefpath} \
-		${fillcell} ${initial_density} |& tee -a ${synthlog}
+		${fillcell} ${initial_density} |& tee -a place-log.txt
    cp ${rootname}.cel ${rootname}.cel.bak
    mv ${rootname}.acel ${rootname}.cel
 endif
@@ -125,7 +105,7 @@ endif
 # re-append.
 
 if ( -f ${rootname}.cel2 ) then
-   echo "Preparing pin placement hints from ${rootname}.cel2" |& tee -a ${synthlog}
+   echo "Preparing pin placement hints from ${rootname}.cel2" |& tee -a place-log.txt
    if ( `grep -c padgroup ${rootname}.cel` == "0" ) then
       cat ${rootname}.cel2 >> ${rootname}.cel
    else if ( -M ${rootname}.cel2 > -M ${rootname}.cel ) then
@@ -136,15 +116,15 @@ if ( -f ${rootname}.cel2 ) then
    endif
 else
    echo -n "No ${rootname}.cel2 file found for project. . . " \
-		|& tee -a ${synthlog}
-   echo "continuing without pin placement hints" |& tee -a ${synthlog}
+		|& tee -a place-log.txt
+   echo "continuing without pin placement hints" |& tee -a place-log.txt
 endif
 
 # Add fill cells for the power bus stripes
 # (this is work in progress, commented out for now)
 
-# echo "Running powerbus to add spacers for power bus stripes" |& tee -a ${synthlog}
-# ${scriptdir}/powerbus.tcl ${rootname} ${lefpath} ${fillcell} |& tee -a ${synthlog}
+# echo "Running powerbus to add spacers for power bus stripes" |& tee -a place-log.txt
+# ${scriptdir}/powerbus.tcl ${rootname} ${lefpath} ${fillcell} |& tee -a place-log.txt
 
 # powerbus.tcl creates a .acel file if successful.  If not, then
 # leave the .cel file in place
@@ -166,8 +146,8 @@ if ( !( ${?graywolf_options} )) then
    endif
 endif
 
-echo "Running GrayWolf placement" |& tee -a ${synthlog}
-   ${bindir}/graywolf ${graywolf_options} $rootname >>& ${synthlog}
+echo "Running GrayWolf placement" |& tee -a place-log.txt
+   ${bindir}/graywolf ${graywolf_options} $rootname >>& place-log.txt
 endif
 
 #---------------------------------------------------------------------
@@ -175,9 +155,9 @@ endif
 #---------------------------------------------------------------------
 
 if ( !( -f ${rootname}.pin || ( -M ${rootname}.pin < -M ${rootname}.cel ))) then
-   echo "GrayWolf failure:  No file ${rootname}.pin." |& tee -a ${synthlog}
-   echo "Premature exit." |& tee -a ${synthlog}
-   echo "Synthesis flow stopped due to error condition." >> ${synthlog}
+   echo "GrayWolf failure:  No file ${rootname}.pin." |& tee -a place-log.txt
+   echo "Premature exit." |& tee -a place-log.txt
+   echo "Synthesis flow stopped due to error condition." >> place-log.txt
    exit 1
 endif
 
@@ -204,17 +184,9 @@ if ($makedef == 1) then
    # Create the initial (bootstrap) configuration file
 
    if ( $scripting == "T" ) then
-      if ( "$techleffile" == "" ) then
-         echo "read_lef ${lefpath}" > ${rootname}.cfg
-      else
-         echo "read_lef ${techlefpath}" > ${rootname}.cfg
-      endif
+      echo "read_lef ${lefpath}" > ${rootname}.cfg
    else
-      if ( "$techleffile" == "" ) then
-         echo "lef ${lefpath}" > ${rootname}.cfg
-      else
-         echo "lef ${techlefpath}" > ${rootname}.cfg
-      endif
+      echo "lef ${lefpath}" > ${rootname}.cfg
    endif
 
    ${bindir}/qrouter -i ${rootname}.info -c ${rootname}.cfg
@@ -224,9 +196,9 @@ if ($makedef == 1) then
    #---------------------------------------------------------------------
 
    if ( !( -f ${rootname}.info || ( -M ${rootname}.info < -M ${rootname}.pin ))) then
-      echo "qrouter (-i) failure:  No file ${rootname}.info." |& tee -a ${synthlog}
-      echo "Premature exit." |& tee -a ${synthlog}
-      echo "Synthesis flow stopped due to error condition." >> ${synthlog}
+      echo "qrouter (-i) failure:  No file ${rootname}.info." |& tee -a place-log.txt
+      echo "Premature exit." |& tee -a place-log.txt
+      echo "Synthesis flow stopped due to error condition." >> place-log.txt
       exit 1
    endif
 
@@ -236,22 +208,22 @@ if ($makedef == 1) then
    # been disabled, or else we'll try passing $fillcell directly to
    # place2def
 
-   echo "Running getfillcell.tcl" |& tee -a ${synthlog}
+   echo "Running getfillcell.tcl" |& tee -a place-log.txt
    set usefillcell = `${scriptdir}/getfillcell.tcl $rootname \
 	${lefpath} $fillcell | grep fill= | cut -d= -f2`
 
    if ( "${usefillcell}" == "" ) then
       set usefillcell = $fillcell
    endif
-   echo "Using cell ${usefillcell} for fill" |& tee -a ${synthlog}
+   echo "Using cell ${usefillcell} for fill" |& tee -a place-log.txt
 
    # Run place2def to turn the GrayWolf output into a DEF file
 
    if ( ${?route_layers} ) then
       ${scriptdir}/place2def.tcl $rootname $usefillcell ${route_layers} \
-		 >>& ${synthlog}
+		 >>& place-log.txt
    else
-      ${scriptdir}/place2def.tcl $rootname $usefillcell >>& ${synthlog}
+      ${scriptdir}/place2def.tcl $rootname $usefillcell >>& place-log.txt
    endif
 
    #---------------------------------------------------------------------
@@ -259,9 +231,9 @@ if ($makedef == 1) then
    #---------------------------------------------------------------------
 
    if ( !( -f ${rootname}.def || ( -M ${rootname}.def < -M ${rootname}.pin ))) then
-      echo "place2def failure:  No file ${rootname}.def." |& tee -a ${synthlog}
-      echo "Premature exit." |& tee -a ${synthlog}
-      echo "Synthesis flow stopped due to error condition." >> ${synthlog}
+      echo "place2def failure:  No file ${rootname}.def." |& tee -a place-log.txt
+      echo "Premature exit." |& tee -a place-log.txt
+      echo "Synthesis flow stopped due to error condition." >> place-log.txt
       exit 1
    endif
 
@@ -275,10 +247,10 @@ if ($makedef == 1) then
          set addspacers_options = ""
       endif
 
-      echo "Running addspacers.tcl ${addspacers_options} ${rootname} ${lefpath} ${fillcell}" |& tee -a ${synthlog}
+      echo "Running addspacers.tcl ${addspacers_options} ${rootname} ${lefpath} ${fillcell}" |& tee -a place-log.txt
 
       ${scriptdir}/addspacers.tcl ${addspacers_options} \
-		${rootname} ${lefpath} ${fillcell} >>& ${synthlog}
+		${rootname} ${lefpath} ${fillcell} >>& place-log.txt
       if ( -f ${rootname}_filled.def ) then
 	 mv ${rootname}_filled.def ${rootname}.def
 	 # Copy the .def file to a backup called "unroute"
@@ -315,9 +287,6 @@ if ($makedef == 1) then
       echo "# qrouter runtime script for project ${rootname}" > ${rootname}.cfg
       echo "" >> ${rootname}.cfg
       echo "verbose 1" >> ${rootname}.cfg
-      if ( "$techleffile" != "" ) then
-         echo "read_lef ${techlefpath}" >> ${rootname}.cfg
-      endif
       echo "read_lef ${lefpath}" >> ${rootname}.cfg
       echo "catch {layers ${route_layers}}" >> ${rootname}.cfg
       if ( ${?via_pattern} ) then
@@ -338,9 +307,6 @@ if ($makedef == 1) then
    else
       echo "# qrouter configuration for project ${rootname}" > ${rootname}.cfg
       echo "" >> ${rootname}.cfg
-      if ( "$techleffile" != "" ) then
-         echo "lef ${techlefpath}" >> ${rootname}.cfg
-      endif
       echo "lef ${lefpath}" >> ${rootname}.cfg
       echo "num_layers ${route_layers}" >> ${rootname}.cfg
       if ( ${?via_pattern} ) then
@@ -393,7 +359,7 @@ if ($makedef == 1) then
    #------------------------------------------------------------------
 
    ${scriptdir}/blifanno.tcl ${synthdir}/${rootname}.blif ${rootname}.def \
-		${synthdir}/${rootname}_anno.blif >>& ${synthlog}
+		${synthdir}/${rootname}_anno.blif >>& place-log.txt
 
    #------------------------------------------------------------------
    # Spot check:  Did blifanno.tcl produce an output file?
@@ -401,31 +367,31 @@ if ($makedef == 1) then
 
    if ( !( -f ${synthdir}/${rootname}_anno.blif )) then
       echo "blifanno.tcl failure:  No file ${rootname}_anno.blif." \
-		|& tee -a ${synthlog}
+		|& tee -a place-log.txt
       echo "RTL verilog and SPICE netlists may be invalid if there" \
-		|& tee -a ${synthlog}
-      echo "were buffer trees optimized by placement." |& tee -a ${synthlog}
-      echo "Synthesis flow continuing, condition not fatal." >> ${synthlog}
+		|& tee -a place-log.txt
+      echo "were buffer trees optimized by placement." |& tee -a place-log.txt
+      echo "Synthesis flow continuing, condition not fatal." >> place-log.txt
     else
-      echo "" >> ${synthlog}
+      echo "" >> place-log.txt
       echo "Generating RTL verilog and SPICE netlist file in directory" \
-		|& tee -a ${synthlog}
-      echo "   ${synthdir}" |& tee -a ${synthlog}
-      echo "Files:" |& tee -a ${synthlog}
-      echo "   Verilog: ${synthdir}/${rootname}.rtl.v" |& tee -a ${synthlog}
-      echo "   Verilog: ${synthdir}/${rootname}.rtlnopwr.v" |& tee -a ${synthlog}
-      echo "   Spice:   ${synthdir}/${rootname}.spc" |& tee -a ${synthlog}
-      echo "" >> ${synthlog}
+		|& tee -a place-log.txt
+      echo "   ${synthdir}" |& tee -a place-log.txt
+      echo "Files:" |& tee -a place-log.txt
+      echo "   Verilog: ${synthdir}/${rootname}.rtl.v" |& tee -a place-log.txt
+      echo "   Verilog: ${synthdir}/${rootname}.rtlnopwr.v" |& tee -a place-log.txt
+      echo "   Spice:   ${synthdir}/${rootname}.spc" |& tee -a place-log.txt
+      echo "" >> place-log.txt
 
       cd ${synthdir}
-      echo "Running blif2Verilog." |& tee -a ${synthlog}
+      echo "Running blif2Verilog." |& tee -a place-log.txt
       ${bindir}/blif2Verilog -c -v ${vddnet} -g ${gndnet} \
 		${rootname}_anno.blif > ${rootname}.rtl.v
 
       ${bindir}/blif2Verilog -c -p -v ${vddnet} -g ${gndnet} \
 		${rootname}_anno.blif > ${rootname}.rtlnopwr.v
 
-      echo "Running blif2BSpice." |& tee -a ${synthlog}
+      echo "Running blif2BSpice." |& tee -a place-log.txt
       ${bindir}/blif2BSpice -i -p ${vddnet} -g ${gndnet} -l \
 		${spicepath} ${rootname}_anno.blif \
 		> ${rootname}.spc
@@ -437,19 +403,19 @@ if ($makedef == 1) then
       if ( !( -f ${rootname}.rtl.v || \
 		( -M ${rootname}.rtl.v < -M ${rootname}.blif ))) then
 	 echo "blif2Verilog failure:  No file ${rootname}.rtl.v created." \
-		|& tee -a ${synthlog}
+		|& tee -a place-log.txt
       endif
 
       if ( !( -f ${rootname}.rtlnopwr.v || \
 		( -M ${rootname}.rtlnopwr.v < -M ${rootname}.blif ))) then
 	 echo "blif2Verilog failure:  No file ${rootname}.rtlnopwr.v created." \
-		|& tee -a ${synthlog}
+		|& tee -a place-log.txt
       endif
 
       if ( !( -f ${rootname}.spc || \
 		( -M ${rootname}.spc < -M ${rootname}.blif ))) then
 	 echo "blif2BSpice failure:  No file ${rootname}.spc created." \
-		|& tee -a ${synthlog}
+		|& tee -a place-log.txt
       endif
 
       # Return to the layout directory
