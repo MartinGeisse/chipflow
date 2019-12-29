@@ -46,12 +46,19 @@ class PlaneAndRouteTask extends MyTaskBase {
         File rootFile = new File(outputDirectory, "design")
 
         //
+        // Use a common log file for all tools. Separate logfiles are not useful since we have to call the P and R
+        // tools repeatedly,
+        //
+
+        File logfile = new File(outputDirectory, "pnr-log.txt")
+
+        //
         // convert .blif to .cel
         //
 
         File synthesizedBlifFile = new File(inputDirectory, "synthesized.blif")
         File celFile = new File(outputDirectory, "design.cel")
-        execute("${scriptDirectory}/blif2cel.tcl --blif ${synthesizedBlifFile} --lef ${technologyLefFile} --cel ${celFile}")
+        execute("${scriptDirectory}/blif2cel.tcl --blif ${synthesizedBlifFile} --lef ${technologyLefFile} --cel ${celFile} >>& ${logfile}")
         if (checkMissingOutputFile(celFile, "blif2cel.tcl")) {
             return
         }
@@ -89,10 +96,17 @@ class PlaneAndRouteTask extends MyTaskBase {
             out.println("read_lef ${technologyLefFile}")
         }
         File routerInfoFile = new File(outputDirectory, "design.info")
-        execute("${scriptDirectory}/qrouter -i ${routerInfoFile} -c ${routerConfigurationFile}\n")
+        execute("${scriptDirectory}/qrouter -i ${routerInfoFile} -c ${routerConfigurationFile} >>& ${logfile}")
         if (checkMissingOutputFile(routerInfoFile, "router (info)")) {
             return
         }
+        int routingLayers = 0
+        routerInfoFile.eachLine {line ->
+            if (line.contains("horizontal") && line.contains("vertical")) {
+                routingLayers++
+            }
+        }
+
 
         // TODO fill cell is called FILL, width is 240 whatevers. The whole getfillcell scheme from the original script
         // seems dubious at best.
@@ -103,21 +117,37 @@ class PlaneAndRouteTask extends MyTaskBase {
 
         while (true) {
 
+            // TODO it is currently unclear to me whether a second iteration should use the DEF file from the router
+            // or the original one. This was really hard to see from the original scripts.
+
             //
             // placement
             //
 
             // TODO possibly pass -n for "no graphics", not yet clear
-            execute("${toolDirectory}/graywolf ${rootFile} >>& place-log.txt")
+            execute("${toolDirectory}/graywolf ${rootFile} >>& ${logfile}")
             if (checkMissingOutputFile(new File(outputDirectory, "design.pin"), "graywolf")) {
                 return
             }
 
-            execute("${scriptDirectory}/place2def.tcl ${rootFile} FILL >>& place-log.txt")
+            execute("${scriptDirectory}/place2def.tcl ${rootFile} FILL >>& ${logfile}")
             if (checkMissingOutputFile(new File(outputDirectory, "design.def"), "place2def.tcl")) {
                 return
             }
 
+            execute("${scriptDirectory}/addspacers.tcl -stripe 5 200 PG -nostretch ${rootFile} ${technologyLefFile} FILL >>& ${logfile}")
+            File designDefFile = new File(outputDirectory, "design.def")
+            File designFilledDefFile = new File(outputDirectory, "design_filled.def")
+            if (designFilledDefFile.exists()) {
+                designDefFile.delete()
+                designFilledDefFile.renameTo(designDefFile)
+            }
+            File designObsFile = new File(outputDirectory, "design.obs")
+            File designObsxFile = new File(outputDirectory, "design.obsx")
+            if (designObsxFile.exists()) {
+                designObsFile.delete()
+                designObsxFile.renameTo(designObsFile)
+            }
 
 
 
