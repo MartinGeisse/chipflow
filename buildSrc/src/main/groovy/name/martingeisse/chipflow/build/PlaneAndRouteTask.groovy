@@ -40,6 +40,12 @@ class PlaneAndRouteTask extends MyTaskBase {
         outputDirectory.mkdirs()
 
         //
+        // some tools derive file names implicitly from a root name, so use a common one
+        //
+
+        File rootFile = new File(outputDirectory, "design")
+
+        //
         // convert .blif to .cel
         //
 
@@ -88,6 +94,9 @@ class PlaneAndRouteTask extends MyTaskBase {
             return
         }
 
+        // TODO fill cell is called FILL, width is 240 whatevers. The whole getfillcell scheme from the original script
+        // seems dubious at best.
+
         //
         // run placer and router in a loop until all congestion problems are solved
         //
@@ -99,10 +108,18 @@ class PlaneAndRouteTask extends MyTaskBase {
             //
 
             // TODO possibly pass -n for "no graphics", not yet clear
-            execute("${toolDirectory}/graywolf ${rootName} >>& graywolf-log.txt")
+            execute("${toolDirectory}/graywolf ${rootFile} >>& place-log.txt")
             if (checkMissingOutputFile(new File(outputDirectory, "design.pin"), "graywolf")) {
                 return
             }
+
+            execute("${scriptDirectory}/place2def.tcl ${rootFile} FILL >>& place-log.txt")
+            if (checkMissingOutputFile(new File(outputDirectory, "design.def"), "place2def.tcl")) {
+                return
+            }
+
+
+
 
             //
             // router

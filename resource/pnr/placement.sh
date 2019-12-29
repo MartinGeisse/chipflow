@@ -28,50 +28,6 @@ cd ${layoutdir}
 
 
 
- # Run getfillcell to determine which cell should be used for fill to
- # match the width specified for feedthroughs in the .par file.  If
- # nothing is returned by getfillcell, then either feedthroughs have
- # been disabled, or else we'll try passing $fillcell directly to
- # place2def
-
- echo "Running getfillcell.tcl" |& tee -a place-log.txt
- set usefillcell = `${scriptdir}/getfillcell.tcl $rootname ${lefpath} $fillcell | grep fill= | cut -d= -f2`
-
- if ( "${usefillcell}" == "" ) then
-    set usefillcell = $fillcell
- endif
- echo "Using cell ${usefillcell} for fill" |& tee -a place-log.txt
-
-
-
-
-
-
-
-
-
-
-
- # Run place2def to turn the GrayWolf output into a DEF file
-
- if ( ${?route_layers} ) then
-    ${scriptdir}/place2def.tcl $rootname $usefillcell ${route_layers} \
-   >>& place-log.txt
- else
-    ${scriptdir}/place2def.tcl $rootname $usefillcell >>& place-log.txt
- endif
-
- #---------------------------------------------------------------------
- # Spot check:  Did place2def produce file ${rootname}.def?
- #---------------------------------------------------------------------
-
- if ( !( -f ${rootname}.def || ( -M ${rootname}.def < -M ${rootname}.pin ))) then
-    echo "place2def failure:  No file ${rootname}.def." |& tee -a place-log.txt
-    echo "Premature exit." |& tee -a place-log.txt
-    echo "Synthesis flow stopped due to error condition." >> place-log.txt
-    exit 1
- endif
-
  #---------------------------------------------------------------------
  # Add spacer cells to create a straight border on the right side
  #---------------------------------------------------------------------
@@ -82,14 +38,13 @@ cd ${layoutdir}
        set addspacers_options = ""
     endif
 
-    echo "Running addspacers.tcl ${addspacers_options} ${rootname} ${lefpath} ${fillcell}" |& tee -a place-log.txt
+    echo "Running addspacers.tcl ${addspacers_options} ${rootname} ${lefpath} FILL" |& tee -a place-log.txt
 
-    ${scriptdir}/addspacers.tcl ${addspacers_options} \
-  ${rootname} ${lefpath} ${fillcell} >>& place-log.txt
+    ${scriptdir}/addspacers.tcl ${addspacers_options} ${rootname} ${lefpath} FILL >>& place-log.txt
     if ( -f ${rootname}_filled.def ) then
- mv ${rootname}_filled.def ${rootname}.def
- # Copy the .def file to a backup called "unroute"
- cp ${rootname}.def ${rootname}_unroute.def
+       mv ${rootname}_filled.def ${rootname}.def
+       # Copy the .def file to a backup called "unroute"
+       cp ${rootname}.def ${rootname}_unroute.def
     endif
 
     if ( -f ${rootname}.obsx ) then

@@ -7,5 +7,4 @@
 
 # Router command options:
 # -------------------------------------------
-# set route_layers = 
-# set via_stacks = 
+# set via_stacks =
