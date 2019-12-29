@@ -1,16 +1,11 @@
 package name.martingeisse.chipflow.build
 
 import org.apache.commons.io.FileUtils
-import org.apache.commons.io.IOUtils
-import org.apache.commons.lang3.StringUtils
-import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
-
-import java.nio.charset.StandardCharsets
 
 class SynthesizeTask extends MyTaskBase {
 
@@ -35,14 +30,20 @@ class SynthesizeTask extends MyTaskBase {
     @TaskAction
     void run() {
 
+        //
         // clean previous results
+        //
+
         FileUtils.deleteDirectory(outputDirectory)
         outputDirectory.mkdirs()
 
+        //
         // build synthesis script
-        File synthesisScript = new File(outputDirectory, "synthesis.yosys");
-        File synthesisOutputFile = new File(outputDirectory, "yosys-out.blif")
-        synthesisScript.withPrintWriter("ISO-8859-1", { out ->
+        //
+
+        File yosysScript = new File(outputDirectory, "synthesis.yosys");
+        File yosysOutputFile = new File(outputDirectory, "yosys-out.blif")
+        yosysScript.withPrintWriter("ISO-8859-1", { out ->
             out.println()
             out.println("# read input files")
             out.println("read_liberty -lib -ignore_miss_dir -setattr blackbox ${technologyLibertyFile}")
@@ -70,25 +71,27 @@ class SynthesizeTask extends MyTaskBase {
             out.println("opt")
             out.println("clean")
             out.println("rename -enumerate")
-            out.println("write_blif -buf BUFX2 A Y ${synthesisOutputFile}")
+            out.println("write_blif -buf BUFX2 A Y ${yosysOutputFile}")
         });
 
+        //
         // run yosys
+        //
+
         File synthesisLogfile = new File(outputDirectory, "log.txt");
         synthesisLogfile.withWriter {}
         "yosys -s synthesis.yosys |& tee -a ${synthesisLogfile}".execute().waitFor()
-        if (checkMissingOutputFile(synthesisOutputFile, "yosys")) {
+        if (checkMissingOutputFile(yosysOutputFile, "yosys")) {
             return
         }
 
+        //
         // post-process yosys output (originally in ypostproc.tcl)
-        // TODO the generated alias map is never used in that script!
+        //
 
-        // calling code:
-        // echo "Cleaning up output syntax" |& tee -a ${synthlog}
-        // ${scriptdir}/ypostproc.tcl yosys-out.blif sevenseg ${techdir}/${techname}.sh
+        // File postProcessingOutputFile = new File(outputDirectory, "postproc-out.blif");
 
-//        File postProcessingOutputFile = new File(outputDirectory, "postproc-out.blif");
+        // TODO the original script generates and alias map but then does not use it. Here is the code for that:
 //        synthesisOutputFile.eachLine {line ->
 //            line = line.replace('[', '<').replace(']', '>')
 //            String[] segments = StringUtils.split(line);
@@ -107,6 +110,12 @@ class SynthesizeTask extends MyTaskBase {
 //            }
 //        }
 
+        // TODO rest of ypostproc.tcl
+
+        //
+        // tie-high and tie-low replacement from the qflow scripts is skipped here
+        //
+
         /*
             Constant 0 and 1 should not be connected to VDD and GND directly since noise in the power supply would then cause the
             connected transistors to switch wrongly. Tie-low and tie-high cells are designed to prevent that, effectively
@@ -121,6 +130,41 @@ class SynthesizeTask extends MyTaskBase {
             Implementation-wise, for example a tie-high is a (transistor-implemented) pull-down resistor connected to the gate of
             a PMOS transistor that connects VDD to the output, providing a strong and noise-resistant 1.
          */
+
+        //
+        // declare this the final output of synthesis
+        //
+
+        File finalBlifFile = new File(outputDirectory, "synthesized.blif");
+        Files.copy(yosysOutputFile, finalBlifFile)
+
+        //
+        // produce output files in various formats
+        //
+
+        File outputVerilogFile = new File(outputDirectory, "synthesized.v")
+        "blif2Verilog -c -v vdd -g gnd ${finalBlifFile} > ${outputVerilogFile}".execute().waitFor()
+        if (checkMissingOutputFile(outputVerilogFile, "blif2Verilog")) {
+            return
+        }
+
+        File outputVerilogNopowerFile = new File(outputDirectory, "synthesized-nopower.v")
+        "blif2Verilog -c -p -v vdd -g gnd ${finalBlifFile} > ${outputVerilogNopowerFile}".execute().waitFor()
+        if (checkMissingOutputFile(outputVerilogNopowerFile, "blif2Verilog")) {
+            return
+        }
+
+        File outputBSpiceFile = new File(outputDirectory, "synthesized.spc")
+        "blif2BSpice -i -p vdd -g gnd -l ${technologySpiceFile} ${finalBlifFile} > ${outputBSpiceFile}"
+        if (checkMissingOutputFile(outputBSpiceFile, "blif2BSpice")) {
+            return
+        }
+
+        File outputXSpiceFile = new File(outputDirectory, "synthesized.xspice")
+        "spi2xspice.py ${technologyLibertyFile} ${outputBSpiceFile} ${outputXSpiceFile}"
+        if (checkMissingOutputFile(outputXSpiceFile, "spi2xspice.py")) {
+            return
+        }
 
     }
 

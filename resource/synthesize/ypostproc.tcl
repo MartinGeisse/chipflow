@@ -26,7 +26,6 @@
 # to their internal names by looking at the OUTPUT section.
 #-------------------------------------------------------------
 
-set cycle 0
 while {[gets $bnet line] >= 0} {
    set line [string map {\[ \< \] \> \.subckt \.gate} $line]
    if [regexp {^.gate} $line lmatch] {
