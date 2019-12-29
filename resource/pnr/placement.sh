@@ -23,17 +23,9 @@ touch place-log.txt
 cd ${layoutdir}
 
 
-# Check if a .acel file exists.  This file is produced by qrouter and
-# its existance indicates that qrouter is passing back congestion
-# information to GrayWolf for a final placement pass using fill to
-# break up congested areas.
 
-# TODO check for .acel file to decide if PNR must be re-run
 
-if ( -f ${rootname}.acel && ( -M ${rootname}.acel >= -M ${rootname}.cel )) then
-   cp ${rootname}.cel ${rootname}.cel.bak
-   mv ${rootname}.acel ${rootname}.cel
-endif
+
 
 # Check if a .cel2 file exists and needs to be appended to .cel
 # If the .cel2 file is newer than .cel, then truncate .cel and

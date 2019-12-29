@@ -3,8 +3,6 @@ package name.martingeisse.chipflow.build
 import org.apache.commons.io.FileUtils
 import org.gradle.api.tasks.*
 
-import java.nio.file.Files
-
 class PlaneAndRouteTask extends MyTaskBase {
 
     @InputDirectory
@@ -41,21 +39,14 @@ class PlaneAndRouteTask extends MyTaskBase {
         FileUtils.deleteDirectory(outputDirectory)
         outputDirectory.mkdirs()
 
-        // TODO multiple passes based on .acel file
-        runSinglePass()
-
-    }
-
-    void runSinglePass() {
-
         //
         // convert .blif to .cel
         //
 
         File synthesizedBlifFile = new File(inputDirectory, "synthesized.blif")
-        File celInputFile = new File(outputDirectory, "input.cel")
-        execute("${scriptDirectory}/blif2cel.tcl --blif ${synthesizedBlifFile} --lef ${technologyLefFile} --cel ${celInputFile}")
-        if (checkMissingOutputFile(celInputFile, "blif2cel.tcl")) {
+        File celFile = new File(outputDirectory, "input.cel")
+        execute("${scriptDirectory}/blif2cel.tcl --blif ${synthesizedBlifFile} --lef ${technologyLefFile} --cel ${celFile}")
+        if (checkMissingOutputFile(celFile, "blif2cel.tcl")) {
             return
         }
 
@@ -76,7 +67,25 @@ class PlaneAndRouteTask extends MyTaskBase {
         endif
         */
 
+        //
+        // run placer and router in a loop until all congestion problems are solved
+        //
 
+        while (true) {
+
+            // TODO placer
+
+            // TODO router
+            File acelOutputFile
+
+            if (!acelOutputFile.exists()) {
+                break;
+            }
+
+            celFile.delete()
+            acelOutputFile.renameTo(celFile)
+
+        }
 
     }
 
