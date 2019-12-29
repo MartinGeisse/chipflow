@@ -211,19 +211,23 @@ class PlaneAndRouteTask extends MyTaskBase {
                 out.println("quit")
             })
 
-
-            //
-            // ??? TODO
-            //
-
-            File acelOutputFile
-
-            if (!acelOutputFile.exists()) {
-                break;
+            File routerOutputFile = new File(outputDirectory, "design_route.def")
+            execute("qrouter -noc -s ${routerScript} >>& ${logfile}")
+            if (checkMissingOutputFile(routerOutputFile, "qrouter")) {
+                return
             }
+            designDefFile.delete()
+            routerOutputFile.renameTo(designDefFile)
 
-            celFile.delete()
-            acelOutputFile.renameTo(celFile)
+            File cinfoFile = new File(outputDirectory, "design.cinfo")
+            if (!cinfoFile.exists()) {
+                File acelFile = new File(outputDirectory, "design.acel")
+                execute("${scriptDirectory}/decongest.tcl ${rootFile} ${technologyLefFile} FILL >>& ${logfile}")
+                celFile.delete()
+                acelFile.renameTo(celFile)
+            } else {
+                break
+            }
 
         }
 
