@@ -5,95 +5,21 @@
 # Tim Edwards, April 2013
 #----------------------------------------------------------
 
-if ($#argv < 2) then
-   echo Usage:  display.sh [options] <project_path> <source_name>
-   exit 1
-endif
-
-# Split out options from the main arguments (no options---placeholder only)
-set argline=(`getopt "" $argv[1-]`)
-set cmdargs=`echo "$argline" | awk 'BEGIN {FS = "-- "} END {print $2}'`
-set argc=`echo $cmdargs | wc -w`
-
-if ($argc == 2) then
-   set argv1=`echo $cmdargs | cut -d' ' -f1`
-   set argv2=`echo $cmdargs | cut -d' ' -f2`
-else
-   echo Usage:  display.sh [options] <project_path> <source_name>
-   echo   where
-   echo       <project_path> is the name of the project directory containing
-   echo                 a file called qflow_vars.sh.
-   echo       <source_name> is the root name of the verilog file, and
-   exit 1
-endif
-
-foreach option (${argline})
-   switch (${option})
-      case --:
-	 break
-   endsw
-end
+# Usage:  display.sh [options] <project_path> <source_name>
 
 set projectpath=$argv1
 set sourcename=$argv2
 set rootname=${sourcename:h}
 
-# This script is called with the first argument <project_path>, which should
-# have file "qflow_vars.sh".  Get all of our standard variable definitions
-# from the qflow_vars.sh file.
-
-if (! -f ${projectpath}/qflow_vars.sh ) then
-   echo "Error:  Cannot find file qflow_vars.sh in path ${projectpath}"
-   exit 1
-endif
-
 source ${projectpath}/qflow_vars.sh
 source ${techdir}/${techname}.sh
 cd ${projectpath}
-if (-f project_vars.sh) then
-   source project_vars.sh
-endif
+source project_vars.sh
 
-# Prepend techdir to magicrc unless magicrc begins with "/"
-set abspath=`echo ${magicrc} | cut -c1`
-if ( "${abspath}" == "/" ) then
-   set magicrcpath=${magicrc}
-else
-   set magicrcpath=${techdir}/${magicrc}
-endif
 
-# Prepend techdir to leffile unless leffile begins with "/"
-set abspath=`echo ${leffile} | cut -c1`
-if ( "${abspath}" == "/" ) then
-   set lefpath=${leffile}
-else
-   set lefpath=${techdir}/${leffile}
-endif
 
-# Prepend techdir to techleffile unless techleffile begins with "/"
-set abspath=`echo ${techleffile} | cut -c1`
-if ( "${abspath}" == "/" ) then
-   set techlefpath=${techleffile}
-else
-   set techlefpath=${techdir}/${techleffile}
-endif
-
-#----------------------------------------------------------
-# Copy the .magicrc file from the tech directory to the
-# layout directory, if it does not have one.  This file
-# automatically loads the correct technology file.
-#----------------------------------------------------------
-
-if (! -f ${layoutdir}/.magicrc ) then
-   if ( -f ${magicrcpath} ) then
-      cp ${magicrcpath} ${layoutdir}/.magicrc
-   endif
-endif
-
-#----------------------------------------------------------
-# Done with initialization
-#----------------------------------------------------------
-
+set lefpath=techdir/osu050_stdcells.lef
+cp techdir/osu050.magicrc ${layoutdir}/.magicrc
 cd ${layoutdir}
 
 #---------------------------------------------------
@@ -102,13 +28,6 @@ cd ${layoutdir}
 # and other parameters.
 #---------------------------------------------------
 
-set lefcmd="lef read ${lefpath}"
-
-if ($techleffile != "") then
-   set techlefcmd="lef read ${techlefpath}"
-else
-   set techlefcmd=""
-endif
 
 # Timestamp handling:  If the .mag file is more recent
 # than the .def file, then print a message and do not
@@ -136,8 +55,7 @@ ${bindir}/magic -dnull -noconsole <<EOF
 drc off
 box 0 0 0 0
 snap int
-${lefcmd}
-${techlefcmd}
+lef read ${lefpath}
 def read ${rootname}
 select top cell
 select area labels
@@ -178,12 +96,6 @@ expand
 EOF
 endif
 
-endif
-
-# don't die ungracefully if no X display:
-if ( ! $?DISPLAY ) then
-  echo "No DISPLAY var, not running graphical magic."
-  exit
 endif
 
 # Run magic and query what graphics device types are
