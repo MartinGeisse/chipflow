@@ -173,6 +173,16 @@ class SynthesizeTask extends MyTaskBase {
             return
         }
 
+        //
+        // run post-synthesis timing analysis
+        //
+
+        File vestaLogfile = new File(outputDirectory, "vesta.txt")
+        execute("${toolDirectory}/vesta --period 1E5 ${outputVerilogNopowerFile} ${technologyLibertyFile} &> ${vestaLogfile}")
+        if (checkMissingOutputFile(vestaLogfile, "vesta")) {
+            return
+        }
+
     }
 
 }
