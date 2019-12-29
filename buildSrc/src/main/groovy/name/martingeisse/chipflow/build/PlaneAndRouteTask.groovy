@@ -3,6 +3,8 @@ package name.martingeisse.chipflow.build
 import org.apache.commons.io.FileUtils
 import org.gradle.api.tasks.*
 
+import java.nio.file.Files
+
 class PlaneAndRouteTask extends MyTaskBase {
 
     @InputDirectory
@@ -85,7 +87,7 @@ class PlaneAndRouteTask extends MyTaskBase {
         // file manually. The purpose given was "pin placement hints". Some truncating of the .cel file also
         // happened, possibly to be compatible with the output .cel file of a previous PNR pass.
 
-        // TODO adding power bus stripes was commented out in the original script since it is unfinished work
+        // TODO adding power bus stripes (powerbus.tcl) was commented out in the original script since it is unfinished work
 
         //
         // get router information
@@ -149,6 +151,44 @@ class PlaneAndRouteTask extends MyTaskBase {
                 designObsxFile.renameTo(designObsFile)
             }
 
+            //
+            // back-annotate synthesized design after placement, and especially buffer placement
+            //
+
+            File backAnnotatedBlifFile = new File(outputDirectory, "back-annotated.blif")
+            execute("${scriptDirectory}/blifanno.tcl ${synthesizedBlifFile} ${designDefFile} ${backAnnotatedBlifFile} >>& ${logfile}")
+            if (checkMissingOutputFile(backAnnotatedBlifFile, "blifanno.tcl")) {
+                return
+            }
+
+            File backAnnotatedVerilogFile = new File(outputDirectory, "back-annotated.v")
+            execute("${toolDirectory}/blif2Verilog -c -v vdd -g gnd ${backAnnotatedBlifFile} > ${backAnnotatedVerilogFile}")
+            if (checkMissingOutputFile(backAnnotatedVerilogFile, "blif2Verilog")) {
+                return
+            }
+
+            File backAnnotatedVerilogNopowerFile = new File(outputDirectory, "back-annotated-nopower.v")
+            execute("${toolDirectory}/blif2Verilog -c -p -v vdd -g gnd ${backAnnotatedBlifFile} > ${backAnnotatedVerilogNopowerFile}")
+            if (checkMissingOutputFile(backAnnotatedVerilogNopowerFile, "blif2Verilog")) {
+                return
+            }
+
+            File backAnnotatedBSpiceFile = new File(outputDirectory, "back-annotated.spc")
+            execute("${toolDirectory}/blif2BSpice -i -p vdd -g gnd -l ${technologySpiceFile} ${backAnnotatedBlifFile} > ${backAnnotatedBSpiceFile}")
+            if (checkMissingOutputFile(backAnnotatedBSpiceFile, "blif2BSpice")) {
+                return
+            }
+
+            //
+            // TODO: remove output files? I don't really care, but I'm not sure whether they confuse Graywolf in a
+            // subsequent iteration.
+            //
+
+//            rm -f ${rootname}.blk ${rootname}.gen ${rootname}.gsav ${rootname}.history
+//            rm -f ${rootname}.log ${rootname}.mcel ${rootname}.mdat ${rootname}.mgeo
+//            rm -f ${rootname}.mout ${rootname}.mpin ${rootname}.mpth ${rootname}.msav
+//            rm -f ${rootname}.mver ${rootname}.mvio ${rootname}.stat ${rootname}.out
+//            rm -f ${rootname}.pth ${rootname}.sav ${rootname}.scel ${rootname}.txt
 
             //
             // router
