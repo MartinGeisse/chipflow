@@ -28,33 +28,6 @@ cd ${layoutdir}
 
 
 
-#---------------------------------------------------
-# 2) Prepare DEF and .cfg files for qrouter
-#---------------------------------------------------
-
-# First prepare a simple .cfg file that can be used to point qrouter
-# to the LEF files when generating layer information using the "-i" option.
-
-
-
-
- # Create the initial (bootstrap) configuration file
-
-echo "read_lef ${lefpath}" > ${rootname}.cfg
-
- ${bindir}/qrouter -i ${rootname}.info -c ${rootname}.cfg
-
- #---------------------------------------------------------------------
- # Spot check:  Did qrouter produce file ${rootname}.info?
- #---------------------------------------------------------------------
-
- if ( !( -f ${rootname}.info || ( -M ${rootname}.info < -M ${rootname}.pin ))) then
-    echo "qrouter (-i) failure:  No file ${rootname}.info." |& tee -a place-log.txt
-    echo "Premature exit." |& tee -a place-log.txt
-    echo "Synthesis flow stopped due to error condition." >> place-log.txt
-    exit 1
- endif
-
  # Run getfillcell to determine which cell should be used for fill to
  # match the width specified for feedthroughs in the .par file.  If
  # nothing is returned by getfillcell, then either feedthroughs have
@@ -62,13 +35,22 @@ echo "read_lef ${lefpath}" > ${rootname}.cfg
  # place2def
 
  echo "Running getfillcell.tcl" |& tee -a place-log.txt
- set usefillcell = `${scriptdir}/getfillcell.tcl $rootname \
-${lefpath} $fillcell | grep fill= | cut -d= -f2`
+ set usefillcell = `${scriptdir}/getfillcell.tcl $rootname ${lefpath} $fillcell | grep fill= | cut -d= -f2`
 
  if ( "${usefillcell}" == "" ) then
     set usefillcell = $fillcell
  endif
  echo "Using cell ${usefillcell} for fill" |& tee -a place-log.txt
+
+
+
+
+
+
+
+
+
+
 
  # Run place2def to turn the GrayWolf output into a DEF file
 

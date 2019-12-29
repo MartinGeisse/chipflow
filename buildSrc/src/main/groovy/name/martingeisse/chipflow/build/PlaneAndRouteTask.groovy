@@ -6,7 +6,7 @@ import org.gradle.api.tasks.*
 class PlaneAndRouteTask extends MyTaskBase {
 
     @InputDirectory
-    File inputDirectory = project.file("${project.buildDir}/chipflow/synthesize");
+    File inputDirectory = project.file("${project.buildDir}/chipflow/synthesize")
 
     @Input
     String toplevelModule;
@@ -15,7 +15,7 @@ class PlaneAndRouteTask extends MyTaskBase {
     File toolDirectory = new File("/usr/lib/qflow/bin");
 
     @InputDirectory
-    File scriptDirectory = new File("/usr/lib/qflow/scripts");
+    File scriptDirectory = new File("/usr/lib/qflow/scripts")
 
     @InputFile
     File technologyLibertyFile
@@ -27,7 +27,7 @@ class PlaneAndRouteTask extends MyTaskBase {
     File technologyLefFile
 
     @OutputDirectory
-    File outputDirectory = project.file("${project.buildDir}/chipflow/pnr");
+    File outputDirectory = project.file("${project.buildDir}/chipflow/pnr")
 
     @TaskAction
     void run() {
@@ -44,7 +44,7 @@ class PlaneAndRouteTask extends MyTaskBase {
         //
 
         File synthesizedBlifFile = new File(inputDirectory, "synthesized.blif")
-        File celFile = new File(outputDirectory, "input.cel")
+        File celFile = new File(outputDirectory, "design.cel")
         execute("${scriptDirectory}/blif2cel.tcl --blif ${synthesizedBlifFile} --lef ${technologyLefFile} --cel ${celFile}")
         if (checkMissingOutputFile(celFile, "blif2cel.tcl")) {
             return
@@ -75,21 +75,50 @@ class PlaneAndRouteTask extends MyTaskBase {
         // TODO adding power bus stripes was commented out in the original script since it is unfinished work
 
         //
+        // get router information
+        //
+
+        File routerConfigurationFile = new File(outputDirectory, "design.cfg")
+        routerConfigurationFile.withPrintWriter { out ->
+            out.println("read_lef ${technologyLefFile}")
+        }
+        File routerInfoFile = new File(outputDirectory, "design.info")
+        execute("${scriptDirectory}/qrouter -i ${routerInfoFile} -c ${routerConfigurationFile}\n")
+        if (checkMissingOutputFile(routerInfoFile, "router (info)")) {
+            return
+        }
+
+        //
         // run placer and router in a loop until all congestion problems are solved
         //
 
         while (true) {
-            File rootName = new File(celFile.getParent(), celFile.getName().substring(0, celFile.getName().length() - 4))
+
+            //
+            // placement
+            //
 
             // TODO possibly pass -n for "no graphics", not yet clear
             execute("${toolDirectory}/graywolf ${rootName} >>& graywolf-log.txt")
-            if (checkMissingOutputFile(new File(rootName.getParent(), rootName.getName() + ".pin"), "graywolf")) {
+            if (checkMissingOutputFile(new File(outputDirectory, "design.pin"), "graywolf")) {
                 return
             }
 
+            //
+            // router
+            //
 
-            // TODO router
             File acelOutputFile
+
+
+
+
+
+
+
+
+
+
 
             if (!acelOutputFile.exists()) {
                 break;
