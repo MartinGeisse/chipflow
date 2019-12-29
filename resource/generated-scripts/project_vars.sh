@@ -6,8 +6,7 @@
 # set yosys_debug = 
 # set abc_script = 
 # set nobuffers = 
-# set nofanout = 
-# set fanout_options = 
+# set fanout_options =
 
 # Placement command options:
 # -------------------------------------------

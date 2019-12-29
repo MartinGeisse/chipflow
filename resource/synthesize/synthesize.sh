@@ -46,13 +46,8 @@ cat yosys-out_tmp.blif | sed \
 # Switch to synthdir for processing of the BDNET netlist
 cd ${synthdir}
 
-#---------------------------------------------------------------------
-# If "nofanout" is set, then don't run blifFanout.
-#---------------------------------------------------------------------
 
-if ($?nofanout) then
-   set nchanged=0
-else
+
 
 #---------------------------------------------------------------------
 # Make a copy of the original blif file, as this will be overwritten
@@ -110,7 +105,6 @@ else
    else
       set nchanged=0
    endif
-endif
 
 #---------------------------------------------------------------------
 # Spot check:  Did blifFanout produce an error?
