@@ -18,24 +18,10 @@ source project_vars.sh
 set spicepath=techdir/osu050_stdcells.sp
 set lefpath=techdir/osu050_stdcells.lef
 
-
 # logfile should exist, but just in case. . .
 touch place-log.txt
-
-#-------------------------------------------------------------------------
-# If placement option "initial_density" is set, run the decongest
-# script.  This will annotate the .cel file with fill cells to pad
-# out the area to the specified density.
-#-------------------------------------------------------------------------
-
 cd ${layoutdir}
 
-if ( ${?initial_density} ) then
-   echo "Running decongest to set initial density of ${initial_density}"
-   ${scriptdir}/decongest.tcl ${rootname} ${lefpath} ${fillcell} ${initial_density} |& tee -a place-log.txt
-   cp ${rootname}.cel ${rootname}.cel.bak
-   mv ${rootname}.acel ${rootname}.cel
-endif
 
 # Check if a .acel file exists.  This file is produced by qrouter and
 # its existance indicates that qrouter is passing back congestion

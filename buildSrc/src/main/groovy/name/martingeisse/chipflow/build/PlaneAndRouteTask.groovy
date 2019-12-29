@@ -33,11 +33,6 @@ class PlaneAndRouteTask extends MyTaskBase {
 
     @TaskAction
     void run() {
-        // TODO multiple passes based on .acel file
-        runSinglePass()
-    }
-
-    void runSinglePass() {
 
         //
         // clean previous results
@@ -45,6 +40,13 @@ class PlaneAndRouteTask extends MyTaskBase {
 
         FileUtils.deleteDirectory(outputDirectory)
         outputDirectory.mkdirs()
+
+        // TODO multiple passes based on .acel file
+        runSinglePass()
+
+    }
+
+    void runSinglePass() {
 
         //
         // convert .blif to .cel
@@ -56,6 +58,25 @@ class PlaneAndRouteTask extends MyTaskBase {
         if (checkMissingOutputFile(celInputFile, "blif2cel.tcl")) {
             return
         }
+
+        //
+        // "initial density" support
+        //
+
+        // TODO: the script code does not seem to handle both initial density and router congestion info at the
+        // same time, so I'll leave this commented out for now. It seems more like a workaround than a real solution
+        // anyway since info from the router is much more valuable.
+
+        /*
+        if ( ${?initial_density} ) then
+        echo "Running decongest to set initial density of ${initial_density}"
+        ${scriptdir}/decongest.tcl ${rootname} ${lefpath} ${fillcell} ${initial_density} |& tee -a place-log.txt
+        cp ${rootname}.cel ${rootname}.cel.bak
+        mv ${rootname}.acel ${rootname}.cel
+        endif
+        */
+
+
 
     }
 
