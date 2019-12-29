@@ -27,51 +27,6 @@ cd ${layoutdir}
 
 
 
-# Check if a .cel2 file exists and needs to be appended to .cel
-# If the .cel2 file is newer than .cel, then truncate .cel and
-# re-append.
-
-if ( -f ${rootname}.cel2 ) then
-   echo "Preparing pin placement hints from ${rootname}.cel2" |& tee -a place-log.txt
-   if ( `grep -c padgroup ${rootname}.cel` == "0" ) then
-      cat ${rootname}.cel2 >> ${rootname}.cel
-   else if ( -M ${rootname}.cel2 > -M ${rootname}.cel ) then
-      # Truncate .cel file to first line containing "padgroup"
-      cat ${rootname}.cel | sed -e "/padgroup/Q" > ${rootname}_tmp.cel
-      cat ${rootname}_tmp.cel ${rootname}.cel2 > ${rootname}.cel
-      rm -f ${rootname}_tmp.cel
-   endif
-else
-   echo -n "No ${rootname}.cel2 file found for project. . . " \
-		|& tee -a place-log.txt
-   echo "continuing without pin placement hints" |& tee -a place-log.txt
-endif
-
-#
-# TODO adding power bus stripes was commented out in the original script since it is unfinished work
-#
-
-#-----------------------------------------------
-# 1) Run GrayWolf
-#-----------------------------------------------
-
-if ( !( ${?graywolf_options} )) then
-   if ( !( ${?DISPLAY} )) then
-      set graywolf_options = "-n"
-   else
-      set graywolf_options = ""
-   endif
-endif
-
-echo "Running GrayWolf placement" |& tee -a place-log.txt
-   ${bindir}/graywolf ${graywolf_options} $rootname >>& place-log.txt
-endif
-
-#---------------------------------------------------------------------
-# Spot check:  Did GrayWolf produce file ${rootname}.pin?
-#---------------------------------------------------------------------
-
-# TODO check exists: ${rootname}.pin
 
 #---------------------------------------------------
 # 2) Prepare DEF and .cfg files for qrouter

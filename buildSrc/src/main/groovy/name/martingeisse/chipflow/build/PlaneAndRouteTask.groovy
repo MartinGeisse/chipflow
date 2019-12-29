@@ -67,13 +67,26 @@ class PlaneAndRouteTask extends MyTaskBase {
         endif
         */
 
+        // TODO: the original script checked for a .cel2 file to append to the .cel file. It is not clear to me
+        // if any of the tools generates that file or if it was a chance for the user to specify parts of the .cel
+        // file manually. The purpose given was "pin placement hints". Some truncating of the .cel file also
+        // happened, possibly to be compatible with the output .cel file of a previous PNR pass.
+
+        // TODO adding power bus stripes was commented out in the original script since it is unfinished work
+
         //
         // run placer and router in a loop until all congestion problems are solved
         //
 
         while (true) {
+            File rootName = new File(celFile.getParent(), celFile.getName().substring(0, celFile.getName().length() - 4))
 
-            // TODO placer
+            // TODO possibly pass -n for "no graphics", not yet clear
+            execute("${toolDirectory}/graywolf ${rootName} >>& graywolf-log.txt")
+            if (checkMissingOutputFile(new File(rootName.getParent(), rootName.getName() + ".pin"), "graywolf")) {
+                return
+            }
+
 
             // TODO router
             File acelOutputFile
