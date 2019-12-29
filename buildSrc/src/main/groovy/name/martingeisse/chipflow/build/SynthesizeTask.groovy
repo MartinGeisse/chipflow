@@ -83,6 +83,11 @@ class SynthesizeTask extends MyTaskBase {
 
         // post-process yosys output (originally in ypostproc.tcl)
         // TODO the generated alias map is never used in that script!
+
+        // calling code:
+        // echo "Cleaning up output syntax" |& tee -a ${synthlog}
+        // ${scriptdir}/ypostproc.tcl yosys-out.blif sevenseg ${techdir}/${techname}.sh
+
 //        File postProcessingOutputFile = new File(outputDirectory, "postproc-out.blif");
 //        synthesisOutputFile.eachLine {line ->
 //            line = line.replace('[', '<').replace(']', '>')
@@ -102,6 +107,20 @@ class SynthesizeTask extends MyTaskBase {
 //            }
 //        }
 
+        /*
+            Constant 0 and 1 should not be connected to VDD and GND directly since noise in the power supply would then cause the
+            connected transistors to switch wrongly. Tie-low and tie-high cells are designed to prevent that, effectively
+            working similar to a diode.
+
+            The original qflow scripts tried to use a trick for technologies that are lacking tie-low and tie-high cells: Use
+            a buffer instead whose input is connected to VDD or GND. Unfortunately, that script does not explain how the
+            original problem is solved by that trick, and I suspect that it is similarly susceptible to noise as just connecting
+            the actual output to VDD or GND. So I'll demand instead that proper tie-low / tie-high cells are available -- they
+            are not that complicated to build, after all.
+
+            Implementation-wise, for example a tie-high is a (transistor-implemented) pull-down resistor connected to the gate of
+            a PMOS transistor that connects VDD to the output, providing a strong and noise-resistant 1.
+         */
 
     }
 

@@ -22,29 +22,14 @@ cd ${sourcedir}
 
 
 
+// TODO skipped for now:
+// echo "Cleaning up output syntax" |& tee -a ${synthlog}
+// ${scriptdir}/ypostproc.tcl yosys-out.blif sevenseg ${techdir}/${techname}.sh
 
 
-echo "Cleaning up output syntax" |& tee -a ${synthlog}
-${scriptdir}/ypostproc.tcl yosys-out.blif sevenseg ${techdir}/${techname}.sh
 
-#----------------------------------------------------------------------
-# Add buffers in front of all outputs (for yosys versions before 0.2.0)
-#----------------------------------------------------------------------
 
-#---------------------------------------------------------------------
-# The following definitions will replace "LOGIC0" and "LOGIC1"
-# with buffers from gnd and vdd, respectively.  This takes care
-# of technologies where tie-low and tie-high cells are not
-# defined.
-#---------------------------------------------------------------------
 
-echo "Cleaning Up blif file syntax" |& tee -a ${synthlog}
-
-set subs0a="/LOGIC0/s/O=/A=gnd Y=/"
-set subs0b="/LOGIC0/s/LOGIC0/BUFX2/"
-
-set subs1a="/LOGIC1/s/O=/A=vdd Y=/"
-set subs1b="/LOGIC1/s/LOGIC1/BUFX2/"
 
 #---------------------------------------------------------------------
 # Remove backslashes, references to "$techmap", and
@@ -53,7 +38,6 @@ set subs1b="/LOGIC1/s/LOGIC1/BUFX2/"
 #---------------------------------------------------------------------
 
 cat yosys-out_tmp.blif | sed \
-	-e "$subs0a" -e "$subs0b" -e "$subs1a" -e "$subs1b" \
 	-e 's/\\\([^$]\)/\1/g' \
 	-e 's/$techmap//g' \
 	-e 's/$0\([^ \t<]*\)<[0-9]*:[0-9]*>\([^ \t]*\)/\1\2_FF_INPUT/g' \
