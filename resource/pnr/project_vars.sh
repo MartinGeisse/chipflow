@@ -1,13 +1,5 @@
 #!/usr/bin/tcsh -f
 
-# Synthesis command options:
-# -------------------------------------------
-# set yosys_script =
-# set yosys_debug = 
-# set abc_script = 
-# set nobuffers = 
-# set fanout_options =
-
 # Placement command options:
 # -------------------------------------------
 # set initial_density = 
