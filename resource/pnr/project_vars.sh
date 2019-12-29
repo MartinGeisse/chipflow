@@ -9,4 +9,3 @@
 # -------------------------------------------
 # set route_layers = 
 # set via_stacks = 
-# set qrouter_options = 
