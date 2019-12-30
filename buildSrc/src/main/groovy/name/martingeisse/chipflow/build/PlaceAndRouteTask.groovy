@@ -5,7 +5,7 @@ import org.gradle.api.tasks.*
 
 import java.nio.file.Files
 
-class PlaneAndRouteTask extends MyTaskBase {
+class PlaceAndRouteTask extends MyTaskBase {
 
     @InputDirectory
     File inputDirectory = project.file("${project.buildDir}/chipflow/synthesize")
@@ -53,6 +53,7 @@ class PlaneAndRouteTask extends MyTaskBase {
         //
 
         File logfile = new File(outputDirectory, "pnr-log.txt")
+        logfile.withWriter {}
 
         //
         // convert .blif to .cel
@@ -60,7 +61,7 @@ class PlaneAndRouteTask extends MyTaskBase {
 
         File synthesizedBlifFile = new File(inputDirectory, "synthesized.blif")
         File celFile = new File(outputDirectory, "design.cel")
-        execute("${scriptDirectory}/blif2cel.tcl --blif ${synthesizedBlifFile} --lef ${technologyLefFile} --cel ${celFile} >>& ${logfile}")
+        execute("${scriptDirectory}/blif2cel.tcl --blif ${synthesizedBlifFile} --lef ${technologyLefFile} --cel ${celFile} &>> ${logfile}")
         if (checkMissingOutputFile(celFile, "blif2cel.tcl")) {
             return
         }
@@ -98,7 +99,7 @@ class PlaneAndRouteTask extends MyTaskBase {
             out.println("read_lef ${technologyLefFile}")
         }
         File routerInfoFile = new File(outputDirectory, "design.info")
-        execute("${scriptDirectory}/qrouter -i ${routerInfoFile} -c ${routerConfigurationFile} >>& ${logfile}")
+        execute("${scriptDirectory}/qrouter -i ${routerInfoFile} -c ${routerConfigurationFile} &>> ${logfile}")
         if (checkMissingOutputFile(routerInfoFile, "router (info)")) {
             return
         }
@@ -129,17 +130,17 @@ class PlaneAndRouteTask extends MyTaskBase {
             //
 
             // TODO possibly pass -n for "no graphics", not yet clear
-            execute("${toolDirectory}/graywolf ${rootFile} >>& ${logfile}")
+            execute("${toolDirectory}/graywolf ${rootFile} &>> ${logfile}")
             if (checkMissingOutputFile(new File(outputDirectory, "design.pin"), "graywolf")) {
                 return
             }
 
-            execute("${scriptDirectory}/place2def.tcl ${rootFile} FILL >>& ${logfile}")
+            execute("${scriptDirectory}/place2def.tcl ${rootFile} FILL &>> ${logfile}")
             if (checkMissingOutputFile(designDefFile, "place2def.tcl")) {
                 return
             }
 
-            execute("${scriptDirectory}/addspacers.tcl -stripe 5 200 PG -nostretch ${rootFile} ${technologyLefFile} FILL >>& ${logfile}")
+            execute("${scriptDirectory}/addspacers.tcl -stripe 5 200 PG -nostretch ${rootFile} ${technologyLefFile} FILL &>> ${logfile}")
             File designFilledDefFile = new File(outputDirectory, "design_filled.def")
             if (designFilledDefFile.exists()) {
                 designDefFile.delete()
@@ -156,7 +157,7 @@ class PlaneAndRouteTask extends MyTaskBase {
             //
 
             File backAnnotatedBlifFile = new File(outputDirectory, "back-annotated.blif")
-            execute("${scriptDirectory}/blifanno.tcl ${synthesizedBlifFile} ${designDefFile} ${backAnnotatedBlifFile} >>& ${logfile}")
+            execute("${scriptDirectory}/blifanno.tcl ${synthesizedBlifFile} ${designDefFile} ${backAnnotatedBlifFile} &>> ${logfile}")
             if (checkMissingOutputFile(backAnnotatedBlifFile, "blifanno.tcl")) {
                 return
             }
@@ -212,7 +213,7 @@ class PlaneAndRouteTask extends MyTaskBase {
             })
 
             File routerOutputFile = new File(outputDirectory, "design_route.def")
-            execute("qrouter -noc -s ${routerScript} >>& ${logfile}")
+            execute("qrouter -noc -s ${routerScript} &>> ${logfile}")
             if (checkMissingOutputFile(routerOutputFile, "qrouter")) {
                 return
             }
@@ -222,7 +223,7 @@ class PlaneAndRouteTask extends MyTaskBase {
             File cinfoFile = new File(outputDirectory, "design.cinfo")
             if (!cinfoFile.exists()) {
                 File acelFile = new File(outputDirectory, "design.acel")
-                execute("${scriptDirectory}/decongest.tcl ${rootFile} ${technologyLefFile} FILL >>& ${logfile}")
+                execute("${scriptDirectory}/decongest.tcl ${rootFile} ${technologyLefFile} FILL &>> ${logfile}")
                 celFile.delete()
                 acelFile.renameTo(celFile)
             } else {

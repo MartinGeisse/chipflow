@@ -1,4 +1,4 @@
-import name.martingeisse.chipflow.build.PlaneAndRouteTask
+import name.martingeisse.chipflow.build.PlaceAndRouteTask
 import name.martingeisse.chipflow.build.SynthesizeTask
 
 apply plugin: 'base'
@@ -12,7 +12,7 @@ task synthesize(type: SynthesizeTask) {
     technologyLefFile = new File("${techdir}/osu050_stdcells.lef")
 }
 
-task pnr(type: PlaneAndRouteTask) {
+task pnr(type: PlaceAndRouteTask) {
     dependsOn 'synthesize'
 
     toplevelModule = "SevenSegmentDecoder"
